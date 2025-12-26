@@ -28,11 +28,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config_path = Path(args.config).expanduser().resolve()
-    config: EvalConfig = load_eval_config(config_path)
+    config: EvalConfig = load_eval_config(str(config_path))
 
-    results_root = Path(config.results_root).expanduser()
-    run_dir = make_run_dir(results_root, config.task_name)
-    save_config_snapshot(run_dir, config_path)
+    run_dir = make_run_dir(config.results_root, config.task_name)
+    save_config_snapshot(run_dir, str(config_path))
 
     runner = EvalRunner()
     metrics = runner.run(config, run_dir)
