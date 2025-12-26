@@ -1,0 +1,21 @@
+model:
+  name: microsoft/phi-1_5
+  tensor_parallel_size: 1
+  gpu_memory_utilization: 0.50
+  max_model_len: 2048
+  dtype: half
+  # extra_llm_kwargs: {}
+
+io:
+  queries_file: queries.txt
+  output_file: outputs.txt
+  queries_mode: paragraphs   # "paragraphs" or "lines"
+
+sampling:
+  max_tokens: 200
+  temperature: 0.3
+  top_p: 0.95
+  seed: 123
+  n: 1
+  stop: null
+  # extra_sampling_kwargs: {}
