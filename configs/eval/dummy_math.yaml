@@ -1,0 +1,10 @@
+task_name: "dummy_math"
+results_root: "results/eval"
+seed: 42
+n_examples: 25
+batch_size: 8
+model:
+  name: "dummy"
+dataset:
+  name: "dummy_math_addition"
+  max_int: 20
