@@ -13,7 +13,7 @@ from phi_synth_math.tasks.eval.scoring import exact_match
 class EvalRunner:
     """Runs evaluation for a given config and run directory."""
 
-    def run(self, config: EvalConfig, run_dir: str) -> dict[str, Any]:
+    def run(self, config: EvalConfig, run_dir: Path) -> dict[str, Any]:
         run_path = Path(run_dir)
         run_path.mkdir(parents=True, exist_ok=True)
 
@@ -38,13 +38,17 @@ class EvalRunner:
 
                 if len(batch_questions) >= config.batch_size:
                     batch_result = self._process_batch(model, batch_examples, batch_questions)
-                    n_total, n_correct = self._write_results(batch_result, pred_file, mistakes, n_total, n_correct)
+                    n_total, n_correct = self._write_results(
+                        batch_result, pred_file, mistakes, n_total, n_correct
+                    )
                     batch_questions = []
                     batch_examples = []
 
             if batch_questions:
                 batch_result = self._process_batch(model, batch_examples, batch_questions)
-                n_total, n_correct = self._write_results(batch_result, pred_file, mistakes, n_total, n_correct)
+                n_total, n_correct = self._write_results(
+                    batch_result, pred_file, mistakes, n_total, n_correct
+                )
 
         metrics = {
             "accuracy": (n_correct / n_total) if n_total > 0 else 0.0,
@@ -56,7 +60,6 @@ class EvalRunner:
             json.dump(metrics, f, indent=2)
 
         if mistakes:
-            mistakes_path.parent.mkdir(parents=True, exist_ok=True)
             with mistakes_path.open("w", encoding="utf-8") as f:
                 for line in mistakes[:50]:
                     f.write(line + "\n")
@@ -70,6 +73,12 @@ class EvalRunner:
         questions: List[str],
     ) -> List[tuple[dict[str, Any], str, bool]]:
         predictions = model.generate(questions)
+
+        if len(predictions) != len(examples):
+            raise RuntimeError(
+                f"Model returned {len(predictions)} predictions for {len(examples)} examples."
+            )
+
         results: List[tuple[dict[str, Any], str, bool]] = []
         for example, pred in zip(examples, predictions):
             correct = exact_match(pred, example["answer"])
@@ -93,11 +102,14 @@ class EvalRunner:
                 "correct": correct,
             }
             pred_file.write(json.dumps(record, ensure_ascii=False) + "\n")
+
             if not correct and len(mistakes) < 50:
                 mistakes.append(
                     f"{example['id']}\tQ: {example['question']}\tGold: {example['answer']}\tPred: {pred}"
                 )
+
             n_total += 1
             if correct:
                 n_correct += 1
+
         return n_total, n_correct

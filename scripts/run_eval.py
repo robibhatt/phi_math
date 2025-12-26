@@ -4,10 +4,13 @@ import argparse
 import sys
 from pathlib import Path
 
+# -----------------------------------------------------------------------------
+# Ensure local src/ is on PYTHONPATH (prefer local over installed packages)
+# -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = PROJECT_ROOT / "src"
 if str(SRC_PATH) not in sys.path:
-    sys.path.append(str(SRC_PATH))
+    sys.path.insert(0, str(SRC_PATH))
 
 from phi_synth_math.core.config import EvalConfig, load_eval_config
 from phi_synth_math.core.run_dir import make_run_dir, save_config_snapshot
@@ -28,6 +31,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config_path = Path(args.config).expanduser().resolve()
+
     config: EvalConfig = load_eval_config(str(config_path))
 
     run_dir = make_run_dir(config.results_root, config.task_name)
@@ -36,11 +40,15 @@ def main() -> None:
     runner = EvalRunner()
     metrics = runner.run(config, run_dir)
 
+    accuracy = float(metrics.get("accuracy", 0.0))
+    n_total = metrics.get("n_total", 0)
+    n_correct = metrics.get("n_correct", 0)
+
     summary = (
         f"Run complete for task '{config.task_name}'. "
         f"Run directory: {run_dir}. "
-        f"Metrics: accuracy={metrics.get('accuracy'):.3f}, "
-        f"n_total={metrics.get('n_total')}, n_correct={metrics.get('n_correct')}."
+        f"Metrics: accuracy={accuracy:.3f}, "
+        f"n_total={n_total}, n_correct={n_correct}."
     )
     print(summary)
 

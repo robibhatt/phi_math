@@ -21,7 +21,8 @@ MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
 def make_dataset(cfg: DatasetConfig, *, n_examples: int, seed: int) -> Dataset:
     factory = DATASET_REGISTRY.get(cfg.name)
     if factory is None:
-        raise ValueError(f"Unknown dataset name '{cfg.name}'. Available: {', '.join(DATASET_REGISTRY)}")
+        available = ", ".join(sorted(DATASET_REGISTRY))
+        raise ValueError(f"Unknown dataset name '{cfg.name}'. Available: {available}")
 
     max_int = cfg.max_int if cfg.max_int is not None else 20
     return factory(n_examples=n_examples, seed=seed, max_int=max_int)
@@ -30,5 +31,6 @@ def make_dataset(cfg: DatasetConfig, *, n_examples: int, seed: int) -> Dataset:
 def make_model(cfg: ModelConfig) -> Model:
     factory = MODEL_REGISTRY.get(cfg.name)
     if factory is None:
-        raise ValueError(f"Unknown model name '{cfg.name}'. Available: {', '.join(MODEL_REGISTRY)}")
+        available = ", ".join(sorted(MODEL_REGISTRY))
+        raise ValueError(f"Unknown model name '{cfg.name}'. Available: {available}")
     return factory()
