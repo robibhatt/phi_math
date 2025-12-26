@@ -53,7 +53,7 @@ def _validate_positive(n: int, *, ctx: str) -> None:
         raise ValueError(f"{ctx} must be > 0. Got: {n}")
 
 
-def load_eval_config(path: str) -> EvalConfig:
+def load_eval_config(path: Path | str) -> EvalConfig:
     config_path = Path(path)
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
