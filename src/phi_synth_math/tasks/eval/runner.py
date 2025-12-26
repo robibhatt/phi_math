@@ -13,7 +13,7 @@ from phi_synth_math.tasks.eval.scoring import exact_match
 class EvalRunner:
     """Runs evaluation for a given config and run directory."""
 
-    def run(self, config: EvalConfig, run_dir: Path) -> dict[str, Any]:
+    def run(self, config: EvalConfig, run_dir: str) -> dict[str, Any]:
         run_path = Path(run_dir)
         run_path.mkdir(parents=True, exist_ok=True)
 

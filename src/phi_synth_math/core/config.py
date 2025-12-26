@@ -40,7 +40,7 @@ def _validate_config(data: dict[str, Any]) -> None:
         raise ValueError("Dataset config must include a 'name' field.")
 
 
-def load_eval_config(path: Path | str) -> EvalConfig:
+def load_eval_config(path: str) -> EvalConfig:
     config_path = Path(path)
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
