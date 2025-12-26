@@ -1,14 +1,14 @@
 ## High-level overview
-- Minimal evaluation harness for synthetic math tasks: loads a YAML config, instantiates a dataset and model from registries, runs batch inference, and writes predictions plus metrics to a run directory.【F:scripts/run_eval.py†L12-L45】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】
-- Primary entrypoint: `python -m scripts.run_eval --config <path>` resolves the config, creates an incrementing run folder, snapshots the config, and executes the evaluation loop.【F:scripts/run_eval.py†L7-L45】
+- Minimal evaluation harness for synthetic math tasks: loads a YAML config (Path-aware), instantiates a dataset and model from registries, runs batch inference, and writes predictions plus metrics to a run directory.【F:scripts/run_eval.py†L31-L54】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】
+- Primary entrypoint: `python -m scripts.run_eval --config <path>` resolves the config path to a `Path`, converts the configured `results_root` to a `Path`, creates an incrementing run folder, snapshots the config, and executes the evaluation loop.【F:scripts/run_eval.py†L31-L54】
 
 ## Directory structure (depth ≤4)
 - `configs/` — evaluation configuration files (YAML).【F:configs/eval/dummy_math.yaml†L1-L10】
   - `configs/eval/` — task-specific evaluation configs (dummy math).【F:configs/eval/dummy_math.yaml†L1-L10】
-- `scripts/` — runnable scripts; `run_eval.py` drives evaluations from the CLI.【F:scripts/run_eval.py†L7-L45】
+- `scripts/` — runnable scripts; `run_eval.py` drives evaluations from the CLI.【F:scripts/run_eval.py†L7-L54】
 - `src/` — Python package source tree (add to `PYTHONPATH`).【F:README.md†L1-L39】
   - `src/phi_synth_math/` — root package for core utilities, models, and tasks.【F:src/phi_synth_math/__init__.py†L1-L5】
-    - `core/` — config parsing, registries, run directory helpers, and JSONL utilities.【F:src/phi_synth_math/core/config.py†L10-L70】【F:src/phi_synth_math/core/run_dir.py†L7-L20】【F:src/phi_synth_math/core/registry.py†L12-L34】【F:src/phi_synth_math/core/jsonl.py†L8-L21】
+    - `core/` — config parsing, registries, run directory helpers, and JSONL utilities.【F:src/phi_synth_math/core/config.py†L10-L96】【F:src/phi_synth_math/core/run_dir.py†L7-L26】【F:src/phi_synth_math/core/registry.py†L12-L34】【F:src/phi_synth_math/core/jsonl.py†L8-L21】
     - `models/` — model protocol and dummy implementation.【F:src/phi_synth_math/models/base.py†L6-L10】【F:src/phi_synth_math/models/dummy.py†L9-L24】
     - `tasks/` — dataset definitions and evaluation loop + scoring.【F:src/phi_synth_math/tasks/datasets/base.py†L6-L10】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】
 - `logs/` — captured job outputs from external runs (GPU test artifacts).【F:logs/test_gpu_cpu.out†L1-L60】
@@ -19,7 +19,7 @@
 - Dataclasses (in code):
   - `ModelConfig`: `name`.【F:src/phi_synth_math/core/config.py†L10-L13】
   - `DatasetConfig`: `name`, optional `max_int`.【F:src/phi_synth_math/core/config.py†L15-L19】
-  - `EvalConfig`: `task_name`, `results_root`, `seed`, `n_examples`, `batch_size`, `model`, `dataset`. Validation enforces presence of required fields and nested `name` keys for model/dataset.【F:src/phi_synth_math/core/config.py†L21-L70】
+  - `EvalConfig`: `task_name`, `results_root` (string from YAML boundary), `seed`, `n_examples`, `batch_size`, `model`, `dataset`. Validation enforces presence of required fields and nested `name` keys for model/dataset; `load_eval_config` accepts a `Path` or string and resolves the file before parsing.【F:src/phi_synth_math/core/config.py†L21-L96】
 
 ## Core abstractions
 - Dataset interface: iterable protocol yielding dicts with `id`, `question`, and `answer`.【F:src/phi_synth_math/tasks/datasets/base.py†L6-L10】
@@ -32,7 +32,7 @@
 - Model registry (`MODEL_REGISTRY`): keys → constructors. Available: `dummy`.【F:src/phi_synth_math/core/registry.py†L16-L34】
 
 ## Evaluation pipeline (CLI to outputs)
-- CLI `python -m scripts.run_eval --config <yaml>` loads the YAML into `EvalConfig`, ensures `src` on `sys.path`, and creates the next numeric run directory under `<results_root>/<task_name>/` while copying the config to `config.yaml`.【F:scripts/run_eval.py†L7-L35】
+- CLI `python -m scripts.run_eval --config <yaml>` loads the YAML into `EvalConfig`, ensures `src` on `sys.path`, expands the configured `results_root` to a `Path`, and creates the next numeric run directory under `<results_root>/<task_name>/` while copying the config to `config.yaml`.【F:scripts/run_eval.py†L7-L40】【F:src/phi_synth_math/core/run_dir.py†L7-L26】
 - `EvalRunner.run` builds dataset/model from registries, streams through dataset in batches of `batch_size`, and calls the model’s `generate` per batch.【F:src/phi_synth_math/tasks/eval/runner.py†L16-L47】
 - Each example produces a record with `id`, `question`, `gold`, `pred`, `correct` written to `predictions.jsonl` (JSON Lines).【F:src/phi_synth_math/tasks/eval/runner.py†L23-L103】
 - Metrics (`accuracy`, `n_total`, `n_correct`) are written to `metrics.json` (pretty-printed JSON).【F:src/phi_synth_math/tasks/eval/runner.py†L49-L57】

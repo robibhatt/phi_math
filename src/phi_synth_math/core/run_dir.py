@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 
-def make_run_dir(results_root: str, task_name: str) -> Path:
+def make_run_dir(results_root: Path, task_name: str) -> Path:
     base_dir = Path(results_root).expanduser() / task_name
     base_dir.mkdir(parents=True, exist_ok=True)
 
@@ -20,7 +20,7 @@ def make_run_dir(results_root: str, task_name: str) -> Path:
     return run_dir
 
 
-def save_config_snapshot(run_dir: Path, config_path: str) -> None:
+def save_config_snapshot(run_dir: Path, config_path: Path) -> None:
     run_dir = Path(run_dir)
     dest = run_dir / "config.yaml"
     shutil.copy2(Path(config_path), dest)
