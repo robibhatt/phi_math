@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phi-synth-math"
+version = "0.1.0"
+description = "Minimal YAML-driven evaluation pipeline for dummy math tasks."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
