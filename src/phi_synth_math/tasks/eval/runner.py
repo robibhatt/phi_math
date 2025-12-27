@@ -14,6 +14,14 @@ class EvalRunner:
     """Runs evaluation for a given config and run directory."""
 
     def run(self, config: EvalConfig, run_dir: Path) -> dict[str, Any]:
+        # ------------------------------------------------------------------
+        # Basic config sanity (fail fast with a clear message)
+        # ------------------------------------------------------------------
+        if getattr(config, "batch_size", None) is None:
+            raise ValueError("EvalConfig.batch_size is missing.")
+        if config.batch_size <= 0:
+            raise ValueError(f"batch_size must be > 0 (got {config.batch_size}).")
+
         run_path = Path(run_dir)
         run_path.mkdir(parents=True, exist_ok=True)
 
@@ -33,12 +41,29 @@ class EvalRunner:
 
         with predictions_path.open("w", encoding="utf-8") as pred_file:
             for example in dataset:
+                # ------------------------------------------------------------------
+                # Dataset contract validation (clear error if a dataset breaks it)
+                # ------------------------------------------------------------------
+                if not isinstance(example, dict):
+                    raise TypeError(f"Dataset yielded non-dict example: {type(example)}")
+                for k in ("id", "question", "answer"):
+                    if k not in example:
+                        raise KeyError(
+                            f"Dataset example missing key '{k}'. "
+                            f"Present keys: {sorted(example.keys())}"
+                        )
+
                 batch_questions.append(example["question"])
                 batch_examples.append(example)
 
                 if len(batch_questions) >= config.batch_size:
                     batch_result = self._process_batch(
-                        model, batch_examples, batch_questions, config.dataset.name
+                        model=model,
+                        examples=batch_examples,
+                        questions=batch_questions,
+                        dataset_name=config.dataset.name,
+                        # Prefer model max_tokens from config if present.
+                        max_tokens=getattr(config.model, "max_tokens", None),
                     )
                     n_total, n_correct = self._write_results(
                         batch_result, pred_file, mistakes, n_total, n_correct
@@ -46,8 +71,15 @@ class EvalRunner:
                     batch_questions = []
                     batch_examples = []
 
+            # Tail batch
             if batch_questions:
-                batch_result = self._process_batch(model, batch_examples, batch_questions, config.dataset.name)
+                batch_result = self._process_batch(
+                    model=model,
+                    examples=batch_examples,
+                    questions=batch_questions,
+                    dataset_name=config.dataset.name,
+                    max_tokens=getattr(config.model, "max_tokens", None),
+                )
                 n_total, n_correct = self._write_results(
                     batch_result, pred_file, mistakes, n_total, n_correct
                 )
@@ -74,12 +106,24 @@ class EvalRunner:
         examples: List[dict[str, Any]],
         questions: List[str],
         dataset_name: str,
+        max_tokens: int | None = None,
     ) -> List[tuple[dict[str, Any], str, bool]]:
-        predictions = model.generate(questions)
+        # Helpful context if generation fails
+        ids_preview = [ex.get("id", "<missing-id>") for ex in examples[:10]]
+        try:
+            # Pass through max_tokens if the backend honors it.
+            predictions = model.generate(questions, max_tokens=max_tokens)
+        except Exception as e:
+            raise RuntimeError(
+                "Model.generate failed for a batch. "
+                f"dataset={dataset_name}, batch_size={len(questions)}, "
+                f"example_ids_preview={ids_preview}"
+            ) from e
 
         if len(predictions) != len(examples):
             raise RuntimeError(
-                f"Model returned {len(predictions)} predictions for {len(examples)} examples."
+                f"Model returned {len(predictions)} predictions for {len(examples)} examples. "
+                f"dataset={dataset_name}, example_ids_preview={ids_preview}"
             )
 
         results: List[tuple[dict[str, Any], str, bool]] = []

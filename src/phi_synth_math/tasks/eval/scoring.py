@@ -11,8 +11,13 @@ def exact_match(pred: str, gold: str) -> bool:
     return normalize_answer(pred) == normalize_answer(gold)
 
 
+# Match integers or decimals with optional sign, allowing comma separators.
+# Crucially: if there's a '.', require at least one digit after it.
+_NUMBER_RE = re.compile(r"[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?")
+
+
 def extract_last_number(text: str) -> str | None:
-    matches = re.findall(r"[-+]?\d[\d,]*\.?\d*", text)
+    matches = _NUMBER_RE.findall(text)
     if not matches:
         return None
     return matches[-1].replace(",", "").strip()

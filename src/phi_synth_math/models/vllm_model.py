@@ -63,12 +63,19 @@ class VLLMModel(Model):
             sampling_kwargs["seed"] = self._seed
 
         sampling_params = SamplingParams(**sampling_kwargs)
+
         outputs = self._llm.generate(questions, sampling_params)
 
+        # vLLM generally preserves input order, but make ordering explicit by request_id.
+        # In most vLLM versions, request_id is the prompt index as a string: "0", "1", ...
+        by_id = {out.request_id: out for out in outputs}
+
         generations: List[str] = []
-        for output in outputs:
-            if output.outputs:
-                generations.append(output.outputs[0].text)
-            else:
+        for i in range(len(questions)):
+            out = by_id.get(str(i))
+            if out is None or not out.outputs:
                 generations.append("")
+            else:
+                generations.append(out.outputs[0].text.strip())
+
         return generations
