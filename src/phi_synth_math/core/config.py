@@ -10,12 +10,22 @@ import yaml
 @dataclass(frozen=True)
 class ModelConfig:
     name: str
+    model_name: str | None = None
+    tensor_parallel_size: int | None = None
+    gpu_memory_utilization: float | None = None
+    max_model_len: int | None = None
+    dtype: str | None = None
+    max_tokens: int | None = None
+    temperature: float | None = None
+    top_p: float | None = None
+    seed: int | None = None
 
 
 @dataclass(frozen=True)
 class DatasetConfig:
     name: str
     max_int: int | None = None
+    split: str | None = None
 
 
 @dataclass(frozen=True)
@@ -53,6 +63,34 @@ def _validate_positive(n: int, *, ctx: str) -> None:
         raise ValueError(f"{ctx} must be > 0. Got: {n}")
 
 
+def _require_float(x: Any, *, ctx: str) -> float:
+    try:
+        return float(x)
+    except Exception as e:
+        raise ValueError(f"{ctx} must be a float. Got: {x!r}") from e
+
+
+def _optional_int(mapping: dict[str, Any], key: str, *, ctx: str, positive: bool = False) -> int | None:
+    if key not in mapping or mapping[key] is None:
+        return None
+    value = _require_int(mapping[key], ctx=f"{ctx}.{key}")
+    if positive:
+        _validate_positive(value, ctx=f"{ctx}.{key}")
+    return value
+
+
+def _optional_float(mapping: dict[str, Any], key: str, *, ctx: str) -> float | None:
+    if key not in mapping or mapping[key] is None:
+        return None
+    return _require_float(mapping[key], ctx=f"{ctx}.{key}")
+
+
+def _optional_str(mapping: dict[str, Any], key: str, *, ctx: str) -> str | None:
+    if key not in mapping or mapping[key] is None:
+        return None
+    return str(mapping[key])
+
+
 def load_eval_config(path: Path | str) -> EvalConfig:
     config_path = Path(path)
     if not config_path.exists():
@@ -73,7 +111,18 @@ def load_eval_config(path: Path | str) -> EvalConfig:
 
     model_map = _require_mapping(_require_field(data, "model", ctx="top-level config"), ctx="model config")
     model_name = str(_require_field(model_map, "name", ctx="model config"))
-    model_cfg = ModelConfig(name=model_name)
+    model_cfg = ModelConfig(
+        name=model_name,
+        model_name=_optional_str(model_map, "model_name", ctx="model"),
+        tensor_parallel_size=_optional_int(model_map, "tensor_parallel_size", ctx="model", positive=True),
+        gpu_memory_utilization=_optional_float(model_map, "gpu_memory_utilization", ctx="model"),
+        max_model_len=_optional_int(model_map, "max_model_len", ctx="model", positive=True),
+        dtype=_optional_str(model_map, "dtype", ctx="model"),
+        max_tokens=_optional_int(model_map, "max_tokens", ctx="model", positive=True),
+        temperature=_optional_float(model_map, "temperature", ctx="model"),
+        top_p=_optional_float(model_map, "top_p", ctx="model"),
+        seed=_optional_int(model_map, "seed", ctx="model"),
+    )
 
     dataset_map = _require_mapping(_require_field(data, "dataset", ctx="top-level config"), ctx="dataset config")
     dataset_name = str(_require_field(dataset_map, "name", ctx="dataset config"))
@@ -83,7 +132,11 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         max_int = _require_int(dataset_map["max_int"], ctx="dataset.max_int")
         _validate_positive(max_int, ctx="dataset.max_int")
 
-    dataset_cfg = DatasetConfig(name=dataset_name, max_int=max_int)
+    dataset_cfg = DatasetConfig(
+        name=dataset_name,
+        max_int=max_int,
+        split=_optional_str(dataset_map, "split", ctx="dataset"),
+    )
 
     return EvalConfig(
         task_name=task_name,

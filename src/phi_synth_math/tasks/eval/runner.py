@@ -7,7 +7,7 @@ from typing import Any, List, TextIO
 from phi_synth_math.core.config import EvalConfig
 from phi_synth_math.core.registry import make_dataset, make_model
 from phi_synth_math.models.base import Model
-from phi_synth_math.tasks.eval.scoring import exact_match
+from phi_synth_math.tasks.eval.scoring import score_prediction
 
 
 class EvalRunner:
@@ -37,7 +37,9 @@ class EvalRunner:
                 batch_examples.append(example)
 
                 if len(batch_questions) >= config.batch_size:
-                    batch_result = self._process_batch(model, batch_examples, batch_questions)
+                    batch_result = self._process_batch(
+                        model, batch_examples, batch_questions, config.dataset.name
+                    )
                     n_total, n_correct = self._write_results(
                         batch_result, pred_file, mistakes, n_total, n_correct
                     )
@@ -45,7 +47,7 @@ class EvalRunner:
                     batch_examples = []
 
             if batch_questions:
-                batch_result = self._process_batch(model, batch_examples, batch_questions)
+                batch_result = self._process_batch(model, batch_examples, batch_questions, config.dataset.name)
                 n_total, n_correct = self._write_results(
                     batch_result, pred_file, mistakes, n_total, n_correct
                 )
@@ -71,6 +73,7 @@ class EvalRunner:
         model: Model,
         examples: List[dict[str, Any]],
         questions: List[str],
+        dataset_name: str,
     ) -> List[tuple[dict[str, Any], str, bool]]:
         predictions = model.generate(questions)
 
@@ -81,7 +84,7 @@ class EvalRunner:
 
         results: List[tuple[dict[str, Any], str, bool]] = []
         for example, pred in zip(examples, predictions):
-            correct = exact_match(pred, example["answer"])
+            correct = score_prediction(dataset_name, pred, example["answer"])
             results.append((example, pred, correct))
         return results
 
