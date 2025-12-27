@@ -5,12 +5,15 @@ import sys
 from pathlib import Path
 
 # -----------------------------------------------------------------------------
-# Ensure local src/ is on PYTHONPATH (prefer local over installed packages)
+# Ensure local src/ is on PYTHONPATH so `python -m scripts.run_eval ...` works
+# when running from the repo root without installing the package.
 # -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = PROJECT_ROOT / "src"
-if str(SRC_PATH) not in sys.path:
-    sys.path.insert(0, str(SRC_PATH))
+if SRC_PATH.exists():
+    src_str = str(SRC_PATH)
+    if src_str not in sys.path:
+        sys.path.insert(0, src_str)
 
 from phi_synth_math.core.config import EvalConfig, load_eval_config
 from phi_synth_math.core.run_dir import make_run_dir, save_config_snapshot
