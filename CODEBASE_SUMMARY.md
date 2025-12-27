@@ -1,59 +1,97 @@
-## High-level overview
-- Evaluation harness loads a YAML config (Path-aware), instantiates a dataset and model from registries (dummy math or GSM8K + dummy/vLLM models), runs batch inference, and writes predictions plus metrics to a run directory.【F:scripts/run_eval.py†L31-L54】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】【F:src/phi_synth_math/core/registry.py†L12-L53】
-- Primary entrypoint: `python -m scripts.run_eval --config <path>` resolves the config path to a `Path`, converts the configured `results_root` to a `Path`, creates an incrementing run folder, snapshots the config, and executes the evaluation loop.【F:scripts/run_eval.py†L31-L54】
-- GSM8K support adds numeric-answer prompting plus scoring that extracts the last number from predictions for comparison against the gold answer.【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L28-L46】【F:src/phi_synth_math/tasks/eval/scoring.py†L11-L27】
+# 1. Project Overview
+- Minimal evaluation harness for math tasks (“phi-synth-math”) that reads a YAML config, instantiates a dataset and model, runs batched inference, and writes predictions plus metrics to a run directory.【F:scripts/run_eval.py†L22-L54】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】
+- Focus areas:
+  - Math evaluations: dummy addition generator and GSM8K prompting/scoring for numeric answers.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L10-L27】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L46】
+  - Phi-style models: exemplar config targets `microsoft/phi-1_5` via vLLM backend.【F:configs/eval/gsm8k_vllm_phi15.yaml†L6-L16】
+- High-level workflow: CLI loads config → create run dir (auto-incremented) → snapshot config → instantiate dataset/model from registries → iterate dataset in batches → model.generate → score predictions → write predictions/metrics/mistakes.【F:scripts/run_eval.py†L22-L54】【F:src/phi_synth_math/core/run_dir.py†L7-L26】【F:src/phi_synth_math/core/registry.py†L12-L53】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】
 
-## Directory structure (depth ≤4)
-- `configs/` — evaluation configuration files (YAML).【F:configs/eval/dummy_math.yaml†L1-L10】【F:configs/eval/gsm8k_vllm_phi15.yaml†L1-L19】
-  - `configs/eval/` — task-specific evaluation configs (dummy math, GSM8K + vLLM).【F:configs/eval/dummy_math.yaml†L1-L10】【F:configs/eval/gsm8k_vllm_phi15.yaml†L1-L19】
-- `scripts/` — runnable scripts; `run_eval.py` drives evaluations from the CLI.【F:scripts/run_eval.py†L7-L54】
-- `src/` — Python package source tree (add to `PYTHONPATH`).【F:README.md†L1-L39】
-  - `src/phi_synth_math/` — root package for core utilities, models, and tasks.【F:src/phi_synth_math/__init__.py†L1-L5】
-    - `core/` — config parsing, registries, run directory helpers, and JSONL utilities.【F:src/phi_synth_math/core/config.py†L10-L112】【F:src/phi_synth_math/core/run_dir.py†L7-L26】【F:src/phi_synth_math/core/registry.py†L12-L53】【F:src/phi_synth_math/core/jsonl.py†L8-L21】
-    - `models/` — model protocol plus dummy and vLLM-backed implementations.【F:src/phi_synth_math/models/base.py†L6-L10】【F:src/phi_synth_math/models/dummy.py†L9-L24】【F:src/phi_synth_math/models/vllm_model.py†L8-L73】
-    - `tasks/` — dataset definitions (dummy math, GSM8K), evaluation loop, and scoring helpers.【F:src/phi_synth_math/tasks/datasets/base.py†L6-L10】【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L10-L27】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L8-L46】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】【F:src/phi_synth_math/tasks/eval/scoring.py†L1-L27】
-- `logs/` — captured job outputs from external runs (GPU test artifacts).【F:logs/test_gpu_cpu.out†L1-L60】
+# 2. Repository Layout
+- Core
+  - `scripts/run_eval.py`: CLI entrypoint driving config load, run directory creation, and evaluation invocation.【F:scripts/run_eval.py†L7-L54】
+  - `src/phi_synth_math/core/`: config parsing/validation, registry construction, run directory helpers, JSONL utilities.【F:src/phi_synth_math/core/config.py†L10-L112】【F:src/phi_synth_math/core/registry.py†L12-L53】【F:src/phi_synth_math/core/run_dir.py†L7-L26】【F:src/phi_synth_math/core/jsonl.py†L8-L21】
+  - `src/phi_synth_math/tasks/`: datasets (dummy math, GSM8K), evaluation runner, scoring logic.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L10-L27】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L46】【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】【F:src/phi_synth_math/tasks/eval/scoring.py†L1-L27】
+  - `src/phi_synth_math/models/`: model protocol plus dummy and vLLM-backed implementations.【F:src/phi_synth_math/models/base.py†L6-L10】【F:src/phi_synth_math/models/dummy.py†L9-L24】【F:src/phi_synth_math/models/vllm_model.py†L8-L73】
+- Supporting
+  - `configs/`: ready-to-run YAMLs (dummy math, GSM8K+Phi via vLLM).【F:configs/eval/dummy_math.yaml†L1-L10】【F:configs/eval/gsm8k_vllm_phi15.yaml†L1-L19】
+  - `README.md`: quickstart and output structure summary.【F:README.md†L1-L39】
+  - `logs/`: captured external job outputs (non-critical to pipeline).【F:logs/test_gpu_cpu.out†L1-L60】
 
-## Config system
-- YAML configs:
-  - `configs/eval/dummy_math.yaml`: defines a dummy math evaluation specifying task name, results root, RNG seed, number of examples, batch size, model name, dataset name, and dataset max integer.【F:configs/eval/dummy_math.yaml†L1-L10】
-  - `configs/eval/gsm8k_vllm_phi15.yaml`: sample GSM8K evaluation pointing to a vLLM-backed Phi-1.5 model with sampling/parallelism parameters and dataset split selection.【F:configs/eval/gsm8k_vllm_phi15.yaml†L1-L19】
-- Dataclasses (in code):
-  - `ModelConfig`: `name` plus optional `model_name`, `tensor_parallel_size`, `gpu_memory_utilization`, `max_model_len`, `dtype`, `max_tokens`, `temperature`, `top_p`, and `seed` for vLLM setup and sampling defaults.【F:src/phi_synth_math/core/config.py†L10-L38】
-  - `DatasetConfig`: `name`, optional `max_int`, and optional `split` (e.g., for GSM8K).【F:src/phi_synth_math/core/config.py†L40-L44】【F:src/phi_synth_math/core/config.py†L80-L89】
-  - `EvalConfig`: `task_name`, `results_root` (string from YAML boundary), `seed`, `n_examples`, `batch_size`, `model`, `dataset`. Validation enforces presence of required fields, numeric positivity checks, and typed optional parsing helpers; `load_eval_config` accepts a `Path` or string and resolves the file before parsing.【F:src/phi_synth_math/core/config.py†L46-L112】
+# 3. Evaluation Pipeline (CRITICAL)
+- Launch/entry:
+  - `python -m scripts.run_eval --config <yaml>` ensures `src/` on `PYTHONPATH`, resolves YAML path, and loads it into `EvalConfig`.【F:scripts/run_eval.py†L7-L37】
+  - Creates next numeric run directory under `<results_root>/<task_name>/` and copies the YAML to `config.yaml` for reproducibility.【F:scripts/run_eval.py†L35-L40】【F:src/phi_synth_math/core/run_dir.py†L7-L26】
+- Config system:
+  - `load_eval_config` parses YAML into dataclasses with validation for required fields and positivity of `n_examples`/`batch_size`; optional model/dataset fields are typed helpers.【F:src/phi_synth_math/core/config.py†L10-L112】
+- Dataset loading/preprocessing:
+  - `make_dataset` chooses constructor from `DATASET_REGISTRY` and applies dataset-specific defaults (dummy `max_int=20` when unspecified; GSM8K `split="test"` by default).【F:src/phi_synth_math/core/registry.py†L12-L37】
+  - Dummy dataset synthesizes addition questions with seeded RNG; GSM8K loads Hugging Face dataset, extracts final numeric answer (post-`####`), formats prompt requesting numeric answer only, and applies deterministic subsampling when limiting `n_examples`.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L10-L27】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L46】
+- Prompt construction:
+  - Dummy dataset produces plain “What is a + b?” text; GSM8K prefixes instructions (“Solve the problem. Give ONLY the final numeric answer.”) and appends “Answer:” to cue direct responses.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L16-L23】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L30-L36】
+- Model invocation:
+  - `make_model` maps `ModelConfig` to registered models; dummy returns deterministic regex-based solver, vLLM model wraps `vllm.LLM` with optional tensor-parallel/memory/dtype settings and sampling controls (max_tokens/temperature/top_p/seed).【F:src/phi_synth_math/core/registry.py†L39-L53】【F:src/phi_synth_math/models/dummy.py†L9-L24】【F:src/phi_synth_math/models/vllm_model.py†L16-L73】
+- Batching + repeat logic:
+  - `EvalRunner.run` accumulates `batch_size` questions before calling `model.generate`; leftover partial batch is processed after iteration ends.【F:src/phi_synth_math/tasks/eval/runner.py†L28-L47】
+  - Per-batch processing checks length alignment of predictions vs. examples to guard against model misbehavior.【F:src/phi_synth_math/tasks/eval/runner.py†L66-L75】
+- Output collection:
+  - For each example, writes JSONL record with `id`, `question`, `gold`, `pred`, `correct` to `predictions.jsonl` in the run directory.【F:src/phi_synth_math/tasks/eval/runner.py†L77-L93】
+  - First 50 mistakes captured in-memory and flushed to `mistakes.txt` for quick inspection.【F:src/phi_synth_math/tasks/eval/runner.py†L49-L63】【F:src/phi_synth_math/tasks/eval/runner.py†L77-L103】
+- Metric computation:
+  - Tracks running counts; final metrics dict: `accuracy` (n_correct / n_total), `n_total`, `n_correct` written to `metrics.json` (pretty JSON).【F:src/phi_synth_math/tasks/eval/runner.py†L43-L63】
+  - Scoring uses dataset-aware `score_prediction`: GSM8K compares normalized last-number extraction; all others use normalized exact match.【F:src/phi_synth_math/tasks/eval/scoring.py†L9-L27】
 
-## Core abstractions
-- Dataset interface: iterable protocol yielding dicts with `id`, `question`, and `answer`.【F:src/phi_synth_math/tasks/datasets/base.py†L6-L10】
-- Model interface: protocol with `generate(questions, max_tokens=None) -> List[str]` for batch text outputs.【F:src/phi_synth_math/models/base.py†L6-L10】
-- Eval runner: orchestrates dataset/model instantiation, batches questions, scores predictions via dataset-aware scoring, writes `predictions.jsonl`, aggregates metrics, and logs first 50 mistakes to `mistakes.txt` when present.【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】
-- Scoring helpers: `normalize_answer`, `exact_match`, `extract_last_number`, and `score_prediction` (uses numeric extraction for GSM8K, otherwise exact match).【F:src/phi_synth_math/tasks/eval/scoring.py†L1-L27】
+# 4. Model Abstractions
+- Protocol: `Model.generate(questions: List[str], max_tokens: int | None = None) -> List[str>` defines batch API.【F:src/phi_synth_math/models/base.py†L6-L10】
+- Dummy model: regex parses “what is X + Y” (case-insensitive) and returns stringified sum or “I don't know”. Deterministic per input; ignores `max_tokens`.【F:src/phi_synth_math/models/dummy.py†L9-L24】
+- VLLM model:
+  - Constructor requires `model_name`; forwards optional tensor parallelism, GPU memory utilization, max model length, and dtype to `vllm.LLM`.【F:src/phi_synth_math/models/vllm_model.py†L16-L46】
+  - Sampling parameters built from config/defaults: `max_tokens` (default 16 if unspecified), `temperature`, `top_p`, `seed`; uses first output text from each generation. Suitable for Phi-1.5 via config example but general to any vLLM-compatible model.【F:src/phi_synth_math/models/vllm_model.py†L48-L73】【F:configs/eval/gsm8k_vllm_phi15.yaml†L6-L16】
+- Model selection keyed by `model.name` in YAML mapped through `MODEL_REGISTRY` (`dummy`, `vllm`).【F:src/phi_synth_math/core/registry.py†L39-L53】
 
-## Registries
-- Dataset registry (`DATASET_REGISTRY`): keys → constructors. Available: `dummy_math_addition` (defaults `max_int=20` when absent) and `gsm8k` (respects split and seeded subsampling).【F:src/phi_synth_math/core/registry.py†L12-L37】
-- Model registry (`MODEL_REGISTRY`): keys → constructors. Available: `dummy` and `vllm`, with explicit construction paths for per-model configuration fields.【F:src/phi_synth_math/core/registry.py†L39-L53】
+# 5. Data & Datasets
+- Interface: iterable yielding dicts with `id`, `question`, `answer` fields.【F:src/phi_synth_math/tasks/datasets/base.py†L6-L10】
+- Supported datasets:
+  - `dummy_math_addition`: synthetic addition samples with bounded integers, deterministic via seed; IDs formatted `ex_######`. Configurable `max_int`.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L10-L27】【F:configs/eval/dummy_math.yaml†L6-L10】
+  - `gsm8k`: wraps Hugging Face GSM8K “main” split; prompt urges numeric final answer; gold extracted after delimiter “####”. Supports `split` selection and seeded subsampling to `n_examples`.【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L46】【F:configs/eval/gsm8k_vllm_phi15.yaml†L17-L19】
+- Dataset selection uses YAML `dataset.name` mapped via `DATASET_REGISTRY`; dataset-specific optional fields (`max_int`, `split`) parsed/validated in `DatasetConfig`.【F:src/phi_synth_math/core/config.py†L40-L89】【F:src/phi_synth_math/core/registry.py†L12-L37】
 
-## Evaluation pipeline (CLI to outputs)
-- CLI `python -m scripts.run_eval --config <yaml>` loads the YAML into `EvalConfig`, ensures `src` on `sys.path`, expands the configured `results_root` to a `Path`, and creates the next numeric run directory under `<results_root>/<task_name>/` while copying the config to `config.yaml`.【F:scripts/run_eval.py†L7-L40】【F:src/phi_synth_math/core/run_dir.py†L7-L26】
-- `EvalRunner.run` builds dataset/model from registries, streams through dataset in batches of `batch_size`, and calls the model’s `generate` per batch.【F:src/phi_synth_math/tasks/eval/runner.py†L16-L47】
-- Each example produces a record with `id`, `question`, `gold`, `pred`, `correct` written to `predictions.jsonl` (JSON Lines).【F:src/phi_synth_math/tasks/eval/runner.py†L23-L103】
-- Metrics (`accuracy`, `n_total`, `n_correct`) are written to `metrics.json` (pretty-printed JSON).【F:src/phi_synth_math/tasks/eval/runner.py†L49-L57】
-- Up to 50 incorrect predictions are logged to `mistakes.txt` with tab-separated metadata when any mistakes occur.【F:src/phi_synth_math/tasks/eval/runner.py†L55-L63】【F:src/phi_synth_math/tasks/eval/runner.py†L79-L103】
+# 6. Metrics & Judging
+- Normalization: lowercase + remove spaces/commas before comparison (`normalize_answer`).【F:src/phi_synth_math/tasks/eval/scoring.py†L1-L13】
+- Exact match: normalized string equality for most datasets.【F:src/phi_synth_math/tasks/eval/scoring.py†L9-L18】
+- GSM8K-specific: extract last numeric substring from prediction/gold (strip commas) then normalized equality; falls back to exact match when numbers missing. Captures robustness to reasoning traces with trailing numeric answers.【F:src/phi_synth_math/tasks/eval/scoring.py†L15-L27】
+- Aggregation: accuracy = n_correct / n_total plus raw counts stored in `metrics.json`.【F:src/phi_synth_math/tasks/eval/runner.py†L43-L63】
 
-## Math datasets
-- Dummy dataset (`dummy_math_addition`): deterministic RNG (seeded) samples `n_examples` pairs of integers in `[0, max_int]`, emits question strings “What is a + b?” with stringified sum as `answer` and sequential `id`s (`ex_000001`, ...).【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L10-L27】
-- GSM8K (`gsm8k`): wraps `datasets.load_dataset("gsm8k", "main", split=<split>)`, formats prompts to request only the final numeric answer, extracts the final answer text after `####`, and performs seeded subsampling when `n_examples` is smaller than the split size.【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L8-L46】
+# 7. Results & Artifacts
+- Run directory: `<results_root>/<task_name>/<run_id>/` where `run_id` auto-increments based on existing numeric folders.【F:src/phi_synth_math/core/run_dir.py†L7-L20】
+- Persisted files:
+  - `config.yaml`: snapshot of the input YAML.【F:src/phi_synth_math/core/run_dir.py†L21-L26】
+  - `predictions.jsonl`: one JSON record per example with question, gold, prediction, and correctness flag.【F:src/phi_synth_math/tasks/eval/runner.py†L77-L93】
+  - `metrics.json`: accuracy and counts (pretty-printed JSON).【F:src/phi_synth_math/tasks/eval/runner.py†L43-L57】
+  - `mistakes.txt`: up to 50 incorrect predictions, tab-separated for quick inspection (only created when mistakes exist).【F:src/phi_synth_math/tasks/eval/runner.py†L49-L63】【F:src/phi_synth_math/tasks/eval/runner.py†L77-L103】
+- README illustrates expected directory tree under `results/eval/<task>/run_id/`.【F:README.md†L11-L34】
 
-## Models
-- Dummy model (`dummy`): regex-extracts two integers from prompts of the form “what is X + Y” (case-insensitive) and returns their sum; otherwise outputs “I don't know”.【F:src/phi_synth_math/models/dummy.py†L9-L24】
-- vLLM-backed model (`vllm`): constructs `vllm.LLM` with optional tensor-parallel, memory utilization, max length, and dtype settings; generates batches with `SamplingParams` built from config/default sampling fields (max tokens, temperature, top_p, seed) and returns the first sampled output text per prompt.【F:src/phi_synth_math/models/vllm_model.py†L8-L73】
+# 8. Configuration Files
+- `configs/eval/dummy_math.yaml`: dummy model + dummy dataset; 25 examples, batch size 8, `max_int` 20; outputs under `results/eval/dummy_math/<run_id>/`.【F:configs/eval/dummy_math.yaml†L1-L10】
+- `configs/eval/gsm8k_vllm_phi15.yaml`: vLLM with `microsoft/phi-1_5`, tensor parallel 1, GPU memory util 0.8, max length 1024, deterministic sampling (temperature 0, top_p 1, seed 0/None), GSM8K test split with 200 examples and batch size 32.【F:configs/eval/gsm8k_vllm_phi15.yaml†L1-L19】
+- Config parsing lives in `core/config.py`; missing required fields raise errors, and optional fields are coerced to proper types with positivity checks for counts/lengths.【F:src/phi_synth_math/core/config.py†L10-L112】
 
-## Reproducibility & determinism
-- Seeding: datasets use `random.Random(seed)` for repeatable number generation/subsampling; dummy model has deterministic regex logic, so outputs repeat for identical inputs and batches.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L16-L27】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L46】【F:src/phi_synth_math/models/dummy.py†L12-L24】
-- Run directory determinism: run IDs auto-increment based on existing numeric subfolders; repeated runs with the same config create new numbered folders but content is deterministic given identical seeds/configs.【F:src/phi_synth_math/core/run_dir.py†L7-L20】
-- No global seeding beyond dataset RNG; randomness confined to dataset sampling and any model-level randomness controlled by optional seeds (e.g., vLLM sampling seed).【F:src/phi_synth_math/models/vllm_model.py†L37-L73】
+# 9. Execution Examples
+- Smoke/dummy eval:
+  ```bash
+  PYTHONPATH=src python -m scripts.run_eval --config configs/eval/dummy_math.yaml
+  ```
+  Produces numbered run under `results/eval/dummy_math/` with predictions/metrics/mistakes files.【F:scripts/run_eval.py†L35-L54】【F:configs/eval/dummy_math.yaml†L1-L10】
+- GSM8K with Phi-1.5 via vLLM (requires vLLM + model weights available):
+  ```bash
+  PYTHONPATH=src python -m scripts.run_eval --config configs/eval/gsm8k_vllm_phi15.yaml
+  ```
+  Writes run under `results/eval/gsm8k_vllm_phi15/` using vLLM backend for generation.【F:scripts/run_eval.py†L35-L54】【F:configs/eval/gsm8k_vllm_phi15.yaml†L1-L19】
 
-## Extensibility notes
-- Add datasets: implement the `Dataset` protocol (yield `id`, `question`, `answer`) under `src/phi_synth_math/tasks/datasets/` and register in `DATASET_REGISTRY` with a unique key.【F:src/phi_synth_math/tasks/datasets/base.py†L6-L10】【F:src/phi_synth_math/core/registry.py†L12-L37】
-- Add models: implement the `Model` protocol under `src/phi_synth_math/models/` and register in `MODEL_REGISTRY`.【F:src/phi_synth_math/models/base.py†L6-L10】【F:src/phi_synth_math/core/registry.py†L39-L53】
-- Modify evaluation logic: extend `EvalRunner` or scoring helpers in `src/phi_synth_math/tasks/eval/` to change batching, metrics, or output formats (e.g., dataset-aware scoring hooks).【F:src/phi_synth_math/tasks/eval/runner.py†L16-L103】【F:src/phi_synth_math/tasks/eval/scoring.py†L1-L27】
+# 10. Known Assumptions / Constraints
+- Hardware/backends:
+  - vLLM backend expects a compatible GPU environment; config exposes tensor parallelism and GPU memory utilization hints (no CPU fallback coded).【F:src/phi_synth_math/models/vllm_model.py†L16-L46】
+  - GSM8K dataset download requires network access via `datasets.load_dataset`.【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L28】
+- Sampling/batching limits:
+  - Default `max_tokens` for vLLM generations is 16 when unspecified; can override via config or call-time parameter.【F:src/phi_synth_math/models/vllm_model.py†L48-L62】
+  - Batch sizing strictly follows YAML `batch_size`; no dynamic padding or streaming—datasets are iterated sequentially with batch accumulation and final partial batch flush.【F:src/phi_synth_math/tasks/eval/runner.py†L28-L47】
+- Determinism:
+  - Seeds propagate to dataset sampling (dummy RNG, GSM8K subsampling) and optionally to vLLM sampling; run directories auto-increment to avoid overwrites rather than reusing IDs.【F:src/phi_synth_math/tasks/datasets/dummy_math_addition.py†L16-L27】【F:src/phi_synth_math/tasks/datasets/gsm8k.py†L18-L46】【F:src/phi_synth_math/models/vllm_model.py†L48-L73】【F:src/phi_synth_math/core/run_dir.py†L7-L20】
