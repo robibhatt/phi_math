@@ -4,21 +4,32 @@ from typing import Callable, Dict
 
 from phi_synth_math.models.base import Model
 from phi_synth_math.models.dummy import DummyModel
-from phi_synth_math.models.vllm_model import VLLMModel
 from phi_synth_math.tasks.datasets.base import Dataset
-from phi_synth_math.tasks.datasets.dummy_math_addition import DummyMathAdditionDataset
-from phi_synth_math.tasks.datasets.gsm8k import GSM8KDataset
+from phi_synth_math.tasks.dummy_addition.dataset import DummyMathAdditionDataset
 
 from .config import DatasetConfig, ModelConfig
 
+
+def _create_vllm_model(**kwargs: object) -> Model:
+    from phi_synth_math.models.vllm_model import VLLMModel
+
+    return VLLMModel(**kwargs)
+
+
+def _create_gsm8k_dataset(**kwargs: object) -> Dataset:
+    from phi_synth_math.tasks.gsm8k.dataset import GSM8KDataset
+
+    return GSM8KDataset(**kwargs)
+
+
 DATASET_REGISTRY: Dict[str, Callable[..., Dataset]] = {
     "dummy_math_addition": DummyMathAdditionDataset,
-    "gsm8k": GSM8KDataset,
+    "gsm8k": _create_gsm8k_dataset,
 }
 
 MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
     "dummy": DummyModel,
-    "vllm": VLLMModel,
+    "vllm": _create_vllm_model,
 }
 
 

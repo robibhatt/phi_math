@@ -14,7 +14,7 @@ if str(SRC_PATH) not in sys.path:
 
 from phi_synth_math.core.config import EvalConfig, load_eval_config
 from phi_synth_math.core.run_dir import make_run_dir, save_config_snapshot
-from phi_synth_math.tasks.eval.runner import EvalRunner
+from phi_synth_math.tasks.shared.runner import EvalRunner
 
 
 def parse_args() -> argparse.Namespace:
