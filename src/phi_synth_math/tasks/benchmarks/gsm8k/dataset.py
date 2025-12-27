@@ -6,7 +6,7 @@ from typing import Any, Iterable
 
 from datasets import load_dataset
 
-from phi_synth_math.tasks.datasets.base import Dataset
+from phi_synth_math.tasks.core.dataset import Dataset
 
 
 def _extract_final_answer(answer_text: str) -> str:

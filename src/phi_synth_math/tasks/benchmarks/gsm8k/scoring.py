@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from phi_synth_math.tasks.shared.scoring import exact_match, extract_last_number, normalize_answer
+from phi_synth_math.tasks.core.scoring import exact_match, extract_last_number, normalize_answer
 
 
 def score(pred: str, gold: str) -> bool:

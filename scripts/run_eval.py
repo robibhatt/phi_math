@@ -17,7 +17,7 @@ if SRC_PATH.exists():
 
 from phi_synth_math.core.config import EvalConfig, load_eval_config
 from phi_synth_math.core.run_dir import make_run_dir, save_config_snapshot
-from phi_synth_math.tasks.shared.runner import EvalRunner
+from phi_synth_math.tasks.core.runner import EvalRunner
 
 
 def parse_args() -> argparse.Namespace:
