@@ -19,7 +19,7 @@ def _extract_final_answer(answer_text: str) -> str:
 class GSM8KDataset(Dataset):
     n_examples: int
     seed: int
-    split: str = "test"
+    split: str
 
     def __iter__(self) -> Iterable[dict[str, Any]]:
         dataset = load_dataset("gsm8k", "main", split=self.split)
@@ -39,14 +39,8 @@ class GSM8KDataset(Dataset):
             question_text = str(example.get("question", ""))
             answer_text = _extract_final_answer(str(example.get("answer", "")))
 
-            prompt = (
-                "Solve the problem. Give ONLY the final numeric answer.\n\n"
-                f"Problem: {question_text}\n"
-                "Answer: "
-            )
-
             yield {
                 "id": f"gsm8k_{idx:06d}",
-                "question": prompt,
+                "question": question_text,
                 "answer": answer_text,
             }

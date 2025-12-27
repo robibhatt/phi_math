@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, List, TextIO
+from typing import Any, Callable, List, TextIO
 
 from phi_synth_math.core.config import EvalConfig
 from phi_synth_math.core.registry import make_dataset, make_model
 from phi_synth_math.models.base import Model
-from phi_synth_math.tasks.core.scoring import score_prediction
+from phi_synth_math.tasks.core.metadata import get_task_spec
 
 
 class EvalRunner:
@@ -21,6 +21,8 @@ class EvalRunner:
             raise ValueError("EvalConfig.batch_size is missing.")
         if config.batch_size <= 0:
             raise ValueError(f"batch_size must be > 0 (got {config.batch_size}).")
+
+        task_spec = get_task_spec(config.dataset.name)
 
         run_path = Path(run_dir)
         run_path.mkdir(parents=True, exist_ok=True)
@@ -53,7 +55,7 @@ class EvalRunner:
                             f"Present keys: {sorted(example.keys())}"
                         )
 
-                batch_questions.append(example["question"])
+                batch_questions.append(str(example["question"]))
                 batch_examples.append(example)
 
                 if len(batch_questions) >= config.batch_size:
@@ -62,6 +64,8 @@ class EvalRunner:
                         examples=batch_examples,
                         questions=batch_questions,
                         dataset_name=config.dataset.name,
+                        prompt_template=task_spec.prompt_template,
+                        scorer=task_spec.scorer,
                         # Prefer model max_tokens from config if present.
                         max_tokens=getattr(config.model, "max_tokens", None),
                     )
@@ -78,6 +82,8 @@ class EvalRunner:
                     examples=batch_examples,
                     questions=batch_questions,
                     dataset_name=config.dataset.name,
+                    prompt_template=task_spec.prompt_template,
+                    scorer=task_spec.scorer,
                     max_tokens=getattr(config.model, "max_tokens", None),
                 )
                 n_total, n_correct = self._write_results(
@@ -106,44 +112,54 @@ class EvalRunner:
         examples: List[dict[str, Any]],
         questions: List[str],
         dataset_name: str,
+        prompt_template: str,
+        scorer: Callable[[str, str], bool],
         max_tokens: int | None = None,
-    ) -> List[tuple[dict[str, Any], str, bool]]:
+    ) -> List[tuple[dict[str, Any], str, str, bool]]:
         # Helpful context if generation fails
         ids_preview = [ex.get("id", "<missing-id>") for ex in examples[:10]]
+        prompts = []
+        for q in questions:
+            try:
+                prompts.append(prompt_template.format(question=q))
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to format prompt for dataset '{dataset_name}' with template: {prompt_template}"
+                ) from e
         try:
             # Pass through max_tokens if the backend honors it.
-            predictions = model.generate(questions, max_tokens=max_tokens)
+            predictions = model.generate(prompts, max_tokens=max_tokens)
         except Exception as e:
             raise RuntimeError(
                 "Model.generate failed for a batch. "
-                f"dataset={dataset_name}, batch_size={len(questions)}, "
+                f"dataset={dataset_name}, batch_size={len(prompts)}, "
                 f"example_ids_preview={ids_preview}"
             ) from e
 
-        if len(predictions) != len(examples):
+        if len(predictions) != len(prompts):
             raise RuntimeError(
-                f"Model returned {len(predictions)} predictions for {len(examples)} examples. "
+                f"Model returned {len(predictions)} predictions for {len(prompts)} examples. "
                 f"dataset={dataset_name}, example_ids_preview={ids_preview}"
             )
 
-        results: List[tuple[dict[str, Any], str, bool]] = []
-        for example, pred in zip(examples, predictions):
-            correct = score_prediction(dataset_name, pred, example["answer"])
-            results.append((example, pred, correct))
+        results: List[tuple[dict[str, Any], str, str, bool]] = []
+        for example, prompt, pred in zip(examples, prompts, predictions):
+            correct = scorer(pred, example["answer"])
+            results.append((example, prompt, pred, correct))
         return results
 
     def _write_results(
         self,
-        batch_result: List[tuple[dict[str, Any], str, bool]],
+        batch_result: List[tuple[dict[str, Any], str, str, bool]],
         pred_file: TextIO,
         mistakes: List[str],
         n_total: int,
         n_correct: int,
     ) -> tuple[int, int]:
-        for example, pred, correct in batch_result:
+        for example, prompt, pred, correct in batch_result:
             record = {
                 "id": example["id"],
-                "question": example["question"],
+                "question": prompt,
                 "gold": example["answer"],
                 "pred": pred,
                 "correct": correct,
@@ -152,7 +168,7 @@ class EvalRunner:
 
             if not correct and len(mistakes) < 50:
                 mistakes.append(
-                    f"{example['id']}\tQ: {example['question']}\tGold: {example['answer']}\tPred: {pred}"
+                    f"{example['id']}\tQ: {prompt}\tGold: {example['answer']}\tPred: {pred}"
                 )
 
             n_total += 1

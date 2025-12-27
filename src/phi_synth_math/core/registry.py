@@ -4,8 +4,8 @@ from typing import Callable, Dict
 
 from phi_synth_math.models.base import Model
 from phi_synth_math.models.dummy import DummyModel
-from phi_synth_math.tasks.benchmarks.dummy_addition.dataset import DummyMathAdditionDataset
 from phi_synth_math.tasks.core.dataset import Dataset
+from phi_synth_math.tasks.core.metadata import TASK_SPECS, get_task_spec
 
 from .config import DatasetConfig, ModelConfig
 
@@ -16,15 +16,8 @@ def _create_vllm_model(**kwargs: object) -> Model:
     return VLLMModel(**kwargs)
 
 
-def _create_gsm8k_dataset(**kwargs: object) -> Dataset:
-    from phi_synth_math.tasks.benchmarks.gsm8k import GSM8KDataset
-
-    return GSM8KDataset(**kwargs)
-
-
 DATASET_REGISTRY: Dict[str, Callable[..., Dataset]] = {
-    "dummy_math_addition": DummyMathAdditionDataset,
-    "gsm8k": _create_gsm8k_dataset,
+    name: spec.dataset_builder for name, spec in TASK_SPECS.items()
 }
 
 MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
@@ -34,20 +27,18 @@ MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
 
 
 def make_dataset(cfg: DatasetConfig, *, n_examples: int, seed: int) -> Dataset:
+    task_spec = get_task_spec(cfg.name)
+    dataset_kwargs = dict(task_spec.default_dataset_params)
+    if cfg.max_int is not None:
+        dataset_kwargs["max_int"] = cfg.max_int
+    if cfg.split is not None:
+        dataset_kwargs["split"] = cfg.split
+
     factory = DATASET_REGISTRY.get(cfg.name)
     if factory is None:
         available = ", ".join(sorted(DATASET_REGISTRY))
         raise ValueError(f"Unknown dataset name '{cfg.name}'. Available: {available}")
-
-    if cfg.name == "dummy_math_addition":
-        max_int = cfg.max_int if cfg.max_int is not None else 20
-        return factory(n_examples=n_examples, seed=seed, max_int=max_int)
-
-    if cfg.name == "gsm8k":
-        split = cfg.split if cfg.split is not None else "test"
-        return factory(n_examples=n_examples, seed=seed, split=split)
-
-    raise ValueError(f"No construction path for dataset '{cfg.name}'.")
+    return factory(n_examples=n_examples, seed=seed, **dataset_kwargs)
 
 
 def make_model(cfg: ModelConfig) -> Model:
