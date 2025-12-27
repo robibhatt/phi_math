@@ -4,16 +4,11 @@ from typing import Callable, Dict
 
 from phi_synth_math.models.base import Model
 from phi_synth_math.models.dummy import DummyModel
+from phi_synth_math.models.vllm_model import VLLMModel
 from phi_synth_math.tasks.core.dataset import Dataset
 from phi_synth_math.tasks.core.metadata import TASK_SPECS, get_task_spec
 
 from .config import DatasetConfig, ModelConfig
-
-
-def _create_vllm_model(**kwargs: object) -> Model:
-    from phi_synth_math.models.vllm_model import VLLMModel
-
-    return VLLMModel(**kwargs)
 
 
 DATASET_REGISTRY: Dict[str, Callable[..., Dataset]] = {
@@ -22,7 +17,7 @@ DATASET_REGISTRY: Dict[str, Callable[..., Dataset]] = {
 
 MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
     "dummy": DummyModel,
-    "vllm": _create_vllm_model,
+    "vllm": VLLMModel,
 }
 
 
