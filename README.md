@@ -35,5 +35,3 @@ results/
       2/
         ...
 ```
-
-Set `PYTHONPATH=src` if your environment does not automatically discover the `src/` layout.
