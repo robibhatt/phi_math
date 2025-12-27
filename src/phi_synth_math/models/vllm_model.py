@@ -7,6 +7,14 @@ from vllm import LLM, SamplingParams
 from .base import Model
 
 
+"""
+os.environ.setdefault("VLLM_USE_V1", "0")  # force legacy engine (usually most stable)
+os.environ.setdefault("VLLM_DISABLE_CUSTOM_ALL_REDUCE", "1")  # avoid custom all-reduce kernel
+os.environ.setdefault("VLLM_USE_CUDA_GRAPH", "0")  # disable cudagraph capture
+os.environ.setdefault("VLLM_ENFORCE_EAGER", "1")  # avoid torch.compile paths
+"""
+
+
 class VLLMModel(Model):
     """vLLM-backed model wrapper that supports batch generation."""
 
