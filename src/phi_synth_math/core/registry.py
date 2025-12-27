@@ -4,17 +4,21 @@ from typing import Callable, Dict
 
 from phi_synth_math.models.base import Model
 from phi_synth_math.models.dummy import DummyModel
+from phi_synth_math.models.vllm_model import VLLMModel
 from phi_synth_math.tasks.datasets.base import Dataset
 from phi_synth_math.tasks.datasets.dummy_math_addition import DummyMathAdditionDataset
+from phi_synth_math.tasks.datasets.gsm8k import GSM8KDataset
 
 from .config import DatasetConfig, ModelConfig
 
 DATASET_REGISTRY: Dict[str, Callable[..., Dataset]] = {
     "dummy_math_addition": DummyMathAdditionDataset,
+    "gsm8k": GSM8KDataset,
 }
 
 MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
     "dummy": DummyModel,
+    "vllm": VLLMModel,
 }
 
 
@@ -24,8 +28,15 @@ def make_dataset(cfg: DatasetConfig, *, n_examples: int, seed: int) -> Dataset:
         available = ", ".join(sorted(DATASET_REGISTRY))
         raise ValueError(f"Unknown dataset name '{cfg.name}'. Available: {available}")
 
-    max_int = cfg.max_int if cfg.max_int is not None else 20
-    return factory(n_examples=n_examples, seed=seed, max_int=max_int)
+    if cfg.name == "dummy_math_addition":
+        max_int = cfg.max_int if cfg.max_int is not None else 20
+        return factory(n_examples=n_examples, seed=seed, max_int=max_int)
+
+    if cfg.name == "gsm8k":
+        split = cfg.split if cfg.split is not None else "test"
+        return factory(n_examples=n_examples, seed=seed, split=split)
+
+    raise ValueError(f"No construction path for dataset '{cfg.name}'.")
 
 
 def make_model(cfg: ModelConfig) -> Model:
@@ -33,4 +44,20 @@ def make_model(cfg: ModelConfig) -> Model:
     if factory is None:
         available = ", ".join(sorted(MODEL_REGISTRY))
         raise ValueError(f"Unknown model name '{cfg.name}'. Available: {available}")
-    return factory()
+    if cfg.name == "dummy":
+        return factory()
+
+    if cfg.name == "vllm":
+        return factory(
+            model_name=cfg.model_name,
+            tensor_parallel_size=cfg.tensor_parallel_size,
+            gpu_memory_utilization=cfg.gpu_memory_utilization,
+            max_model_len=cfg.max_model_len,
+            dtype=cfg.dtype,
+            max_tokens=cfg.max_tokens,
+            temperature=cfg.temperature,
+            top_p=cfg.top_p,
+            seed=cfg.seed,
+        )
+
+    raise ValueError(f"No construction path for model '{cfg.name}'.")

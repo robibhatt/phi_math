@@ -1,0 +1,18 @@
+task_name: "gsm8k_vllm_phi15"
+results_root: "results/eval"
+seed: 42
+n_examples: 200
+batch_size: 32
+model:
+  name: "vllm"
+  model_name: "microsoft/phi-1_5"
+  tensor_parallel_size: 1
+  gpu_memory_utilization: 0.8
+  max_model_len: 1024
+  dtype: "auto"
+  max_tokens: 64
+  temperature: 0.0
+  top_p: 1.0
+dataset:
+  name: "gsm8k"
+  split: "test"
