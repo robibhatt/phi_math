@@ -5,24 +5,15 @@ import sys
 from pathlib import Path
 
 # -----------------------------------------------------------------------------
-# Ensure local src/ is on PYTHONPATH when package isn't installed.
-# This lets you run `python -m scripts.run_eval ...` from the repo root without
-# setting PYTHONPATH manually while still preferring an installed package when
-# available.
+# Ensure local src/ is on PYTHONPATH so `python -m scripts.run_eval ...` works
+# when running from the repo root without installing the package.
 # -----------------------------------------------------------------------------
-def _ensure_local_src():
-    try:
-        import phi_synth_math  # noqa: F401
-
-        return
-    except ModuleNotFoundError:
-        project_root = Path(__file__).resolve().parents[1]
-        src_path = project_root / "src"
-        if src_path.exists():
-            sys.path.insert(0, str(src_path))
-
-
-_ensure_local_src()
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = PROJECT_ROOT / "src"
+if SRC_PATH.exists():
+    src_str = str(SRC_PATH)
+    if src_str not in sys.path:
+        sys.path.insert(0, src_str)
 
 from phi_synth_math.core.config import EvalConfig, load_eval_config
 from phi_synth_math.core.run_dir import make_run_dir, save_config_snapshot
