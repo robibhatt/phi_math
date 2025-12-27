@@ -17,7 +17,7 @@ def _create_vllm_model(**kwargs: object) -> Model:
 
 
 def _create_gsm8k_dataset(**kwargs: object) -> Dataset:
-    from phi_synth_math.tasks.gsm8k.dataset import GSM8KDataset
+    from phi_synth_math.tasks.gsm8k import GSM8KDataset
 
     return GSM8KDataset(**kwargs)
 

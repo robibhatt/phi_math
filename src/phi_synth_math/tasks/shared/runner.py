@@ -7,14 +7,14 @@ from typing import Any, List, TextIO
 from phi_synth_math.core.config import EvalConfig
 from phi_synth_math.core.registry import make_dataset, make_model
 from phi_synth_math.models.base import Model
+from phi_synth_math.tasks import gsm8k
 from phi_synth_math.tasks.dummy_addition import scoring as dummy_addition_scoring
-from phi_synth_math.tasks.gsm8k import scoring as gsm8k_scoring
 from phi_synth_math.tasks.shared import scoring as shared_scoring
 
 
 def score_prediction(dataset_name: str, pred: str, gold: str) -> bool:
     if dataset_name == "gsm8k":
-        return gsm8k_scoring.score(pred, gold)
+        return gsm8k.score(pred, gold)
     if dataset_name == "dummy_math_addition":
         return dummy_addition_scoring.score(pred, gold)
     return shared_scoring.exact_match(pred, gold)
