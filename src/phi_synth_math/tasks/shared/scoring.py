@@ -26,9 +26,9 @@ def extract_last_number(text: str) -> str | None:
 def score_prediction(dataset_name: str, pred: str, gold: str) -> bool:
     # Local imports avoid circular dependencies with per-task scoring modules.
     if dataset_name == "gsm8k":
-        from phi_synth_math.tasks.gsm8k import scoring as gsm8k_scoring
+        from phi_synth_math.tasks import gsm8k
 
-        return gsm8k_scoring.score(pred, gold)
+        return gsm8k.score(pred, gold)
 
     if dataset_name == "dummy_math_addition":
         from phi_synth_math.tasks.dummy_addition import scoring as dummy_addition_scoring
