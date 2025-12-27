@@ -4,8 +4,8 @@ from typing import Callable, Dict
 
 from phi_synth_math.models.base import Model
 from phi_synth_math.models.dummy import DummyModel
-from phi_synth_math.tasks.datasets.base import Dataset
-from phi_synth_math.tasks.dummy_addition.dataset import DummyMathAdditionDataset
+from phi_synth_math.tasks.benchmarks.dummy_addition.dataset import DummyMathAdditionDataset
+from phi_synth_math.tasks.core.dataset import Dataset
 
 from .config import DatasetConfig, ModelConfig
 
@@ -17,7 +17,7 @@ def _create_vllm_model(**kwargs: object) -> Model:
 
 
 def _create_gsm8k_dataset(**kwargs: object) -> Dataset:
-    from phi_synth_math.tasks.gsm8k import GSM8KDataset
+    from phi_synth_math.tasks.benchmarks.gsm8k import GSM8KDataset
 
     return GSM8KDataset(**kwargs)
 

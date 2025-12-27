@@ -25,13 +25,13 @@ def extract_last_number(text: str) -> str | None:
 
 def _score_gsm8k(pred: str, gold: str) -> bool:
     # Local import avoids circular dependency when gsm8k.scoring imports helpers here.
-    from phi_synth_math.tasks import gsm8k
+    from phi_synth_math.tasks.benchmarks.gsm8k import scoring as gsm8k_scoring
 
-    return gsm8k.score(pred, gold)
+    return gsm8k_scoring.score(pred, gold)
 
 
 def _score_dummy_addition(pred: str, gold: str) -> bool:
-    from phi_synth_math.tasks.dummy_addition import scoring as dummy_addition_scoring
+    from phi_synth_math.tasks.benchmarks.dummy_addition import scoring as dummy_addition_scoring
 
     return dummy_addition_scoring.score(pred, gold)
 

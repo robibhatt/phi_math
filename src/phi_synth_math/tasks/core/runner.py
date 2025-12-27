@@ -7,7 +7,7 @@ from typing import Any, List, TextIO
 from phi_synth_math.core.config import EvalConfig
 from phi_synth_math.core.registry import make_dataset, make_model
 from phi_synth_math.models.base import Model
-from phi_synth_math.tasks.shared.scoring import score_prediction
+from phi_synth_math.tasks.core.scoring import score_prediction
 
 
 class EvalRunner:

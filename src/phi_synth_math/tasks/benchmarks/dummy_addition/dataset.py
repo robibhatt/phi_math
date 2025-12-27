@@ -4,7 +4,7 @@ import random
 from dataclasses import dataclass
 from typing import Any, Iterable
 
-from phi_synth_math.tasks.datasets.base import Dataset
+from phi_synth_math.tasks.core.dataset import Dataset
 
 
 @dataclass
