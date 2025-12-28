@@ -72,6 +72,7 @@ class VLLMModel(Model):
             sampling_kwargs["seed"] = self._seed
         if self._stop is not None:
             sampling_kwargs["stop"] = self._stop
+            sampling_kwargs["include_stop_str_in_output"] = True
 
         sampling_params = SamplingParams(**sampling_kwargs)
 
