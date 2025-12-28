@@ -29,6 +29,15 @@ class DatasetConfig:
 
 
 @dataclass(frozen=True)
+class PromptConfig:
+    few_shot_count: int = 0
+    few_shot_split: str = "train"
+    few_shot_seed: int | None = None
+    example_format: str = "Q: {question}\nA: {answer}\n\n"
+    test_format: str = "Q: {question}\nA:"
+
+
+@dataclass(frozen=True)
 class EvalConfig:
     task_name: str
     results_root: str
@@ -37,6 +46,7 @@ class EvalConfig:
     batch_size: int
     model: ModelConfig
     dataset: DatasetConfig
+    prompt: PromptConfig | None = None
 
 
 def _require_mapping(obj: Any, *, ctx: str) -> dict[str, Any]:
@@ -169,6 +179,41 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         split=dataset_split,
     )
 
+    # Parse optional prompt config
+    prompt_cfg: PromptConfig | None = None
+    prompt_map = data.get("prompt")
+    if prompt_map is not None:
+        prompt_map = _require_mapping(prompt_map, ctx="prompt config")
+        few_shot_count = prompt_map.get("few_shot_count", 0)
+        if not isinstance(few_shot_count, int):
+            raise ValueError(f"prompt.few_shot_count must be an integer. Got: {few_shot_count!r}")
+        if few_shot_count < 0:
+            raise ValueError(f"prompt.few_shot_count must be >= 0. Got: {few_shot_count}")
+
+        few_shot_split = prompt_map.get("few_shot_split", "train")
+        if not isinstance(few_shot_split, str):
+            raise ValueError(f"prompt.few_shot_split must be a string. Got: {few_shot_split!r}")
+
+        few_shot_seed = prompt_map.get("few_shot_seed")
+        if few_shot_seed is not None and not isinstance(few_shot_seed, int):
+            raise ValueError(f"prompt.few_shot_seed must be an integer. Got: {few_shot_seed!r}")
+
+        example_format = prompt_map.get("example_format", "Q: {question}\nA: {answer}\n\n")
+        if not isinstance(example_format, str):
+            raise ValueError(f"prompt.example_format must be a string. Got: {example_format!r}")
+
+        test_format = prompt_map.get("test_format", "Q: {question}\nA:")
+        if not isinstance(test_format, str):
+            raise ValueError(f"prompt.test_format must be a string. Got: {test_format!r}")
+
+        prompt_cfg = PromptConfig(
+            few_shot_count=few_shot_count,
+            few_shot_split=few_shot_split,
+            few_shot_seed=few_shot_seed,
+            example_format=example_format,
+            test_format=test_format,
+        )
+
     return EvalConfig(
         task_name=task_name,
         results_root=results_root,
@@ -177,4 +222,5 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         batch_size=batch_size,
         model=model_cfg,
         dataset=dataset_cfg,
+        prompt=prompt_cfg,
     )

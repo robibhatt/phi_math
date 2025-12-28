@@ -8,6 +8,7 @@ from phi_synth_math.core.config import EvalConfig
 from phi_synth_math.core.registry import make_dataset, make_model
 from phi_synth_math.models.base import Model
 from phi_synth_math.tasks.core.metadata import get_task_spec
+from phi_synth_math.tasks.core.prompt_builder import PromptBuilder
 
 
 class EvalRunner:
@@ -26,6 +27,12 @@ class EvalRunner:
 
         run_path = Path(run_dir)
         run_path.mkdir(parents=True, exist_ok=True)
+
+        # Set up prompt builder if few-shot prompting is configured
+        prompt_builder: PromptBuilder | None = None
+        if config.prompt is not None:
+            prompt_builder = PromptBuilder(config.prompt, task_spec)
+            prompt_builder.load_few_shot_examples(config.seed)
 
         dataset = make_dataset(config.dataset, n_examples=config.n_examples, seed=config.seed)
         model = make_model(config.model)
@@ -65,6 +72,7 @@ class EvalRunner:
                         questions=batch_questions,
                         dataset_name=config.dataset.name,
                         prompt_template=task_spec.prompt_template,
+                        prompt_builder=prompt_builder,
                         scorer=task_spec.scorer,
                         # Prefer model max_tokens from config if present.
                         max_tokens=getattr(config.model, "max_tokens", None),
@@ -83,6 +91,7 @@ class EvalRunner:
                     questions=batch_questions,
                     dataset_name=config.dataset.name,
                     prompt_template=task_spec.prompt_template,
+                    prompt_builder=prompt_builder,
                     scorer=task_spec.scorer,
                     max_tokens=getattr(config.model, "max_tokens", None),
                 )
@@ -113,6 +122,7 @@ class EvalRunner:
         questions: List[str],
         dataset_name: str,
         prompt_template: str,
+        prompt_builder: PromptBuilder | None,
         scorer: Callable[[str, str], bool],
         max_tokens: int | None = None,
     ) -> List[tuple[dict[str, Any], str, str, bool]]:
@@ -121,7 +131,10 @@ class EvalRunner:
         prompts = []
         for q in questions:
             try:
-                prompts.append(prompt_template.format(question=q))
+                if prompt_builder is not None:
+                    prompts.append(prompt_builder.build_prompt(q))
+                else:
+                    prompts.append(prompt_template.format(question=q))
             except Exception as e:
                 raise ValueError(
                     f"Failed to format prompt for dataset '{dataset_name}' with template: {prompt_template}"
