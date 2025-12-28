@@ -8,6 +8,7 @@ from phi_synth_math.core.config import EvalConfig
 from phi_synth_math.core.registry import make_dataset, make_model
 from phi_synth_math.models.base import Model
 from phi_synth_math.tasks.core.metadata import get_task_spec
+from phi_synth_math.tasks.core.predictions_formatter import format_predictions
 from phi_synth_math.tasks.core.prompt_builder import PromptBuilder
 
 
@@ -38,12 +39,11 @@ class EvalRunner:
         model = make_model(config.model)
 
         predictions_path = run_path / "predictions.jsonl"
+        predictions_txt_path = run_path / "predictions.txt"
         metrics_path = run_path / "metrics.json"
-        mistakes_path = run_path / "mistakes.txt"
 
         n_total = 0
         n_correct = 0
-        mistakes: List[str] = []
 
         batch_questions: List[str] = []
         batch_examples: List[dict[str, Any]] = []
@@ -78,7 +78,7 @@ class EvalRunner:
                         max_tokens=getattr(config.model, "max_tokens", None),
                     )
                     n_total, n_correct = self._write_results(
-                        batch_result, pred_file, mistakes, n_total, n_correct
+                        batch_result, pred_file, n_total, n_correct
                     )
                     batch_questions = []
                     batch_examples = []
@@ -96,7 +96,7 @@ class EvalRunner:
                     max_tokens=getattr(config.model, "max_tokens", None),
                 )
                 n_total, n_correct = self._write_results(
-                    batch_result, pred_file, mistakes, n_total, n_correct
+                    batch_result, pred_file, n_total, n_correct
                 )
 
         metrics = {
@@ -108,10 +108,8 @@ class EvalRunner:
         with metrics_path.open("w", encoding="utf-8") as f:
             json.dump(metrics, f, indent=2)
 
-        if mistakes:
-            with mistakes_path.open("w", encoding="utf-8") as f:
-                for line in mistakes[:50]:
-                    f.write(line + "\n")
+        # Generate human-readable predictions.txt
+        format_predictions(predictions_path, predictions_txt_path)
 
         return metrics
 
@@ -165,7 +163,6 @@ class EvalRunner:
         self,
         batch_result: List[tuple[dict[str, Any], str, str, bool]],
         pred_file: TextIO,
-        mistakes: List[str],
         n_total: int,
         n_correct: int,
     ) -> tuple[int, int]:
@@ -178,11 +175,6 @@ class EvalRunner:
                 "correct": correct,
             }
             pred_file.write(json.dumps(record, ensure_ascii=False) + "\n")
-
-            if not correct and len(mistakes) < 50:
-                mistakes.append(
-                    f"{example['id']}\tQ: {prompt}\tGold: {example['answer']}\tPred: {pred}"
-                )
 
             n_total += 1
             if correct:
