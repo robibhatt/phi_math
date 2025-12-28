@@ -55,6 +55,7 @@ def make_model(cfg: ModelConfig) -> Model:
             temperature=cfg.temperature,
             top_p=cfg.top_p,
             seed=cfg.seed,
+            stop=cfg.stop,
         )
 
     raise ValueError(f"No construction path for model '{cfg.name}'.")

@@ -9,12 +9,6 @@ from datasets import load_dataset
 from phi_synth_math.tasks.core.dataset import Dataset
 
 
-def _extract_final_answer(answer_text: str) -> str:
-    if "####" in answer_text:
-        return answer_text.split("####")[-1].strip()
-    return answer_text.strip()
-
-
 @dataclass
 class GSM8KDataset(Dataset):
     n_examples: int
@@ -37,7 +31,7 @@ class GSM8KDataset(Dataset):
         for idx, dataset_idx in enumerate(indices, start=1):
             example = dataset[dataset_idx]
             question_text = str(example.get("question", ""))
-            answer_text = _extract_final_answer(str(example.get("answer", "")))
+            answer_text = str(example.get("answer", "")).strip() + " #####"
 
             yield {
                 "id": f"gsm8k_{idx:06d}",

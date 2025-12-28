@@ -19,6 +19,7 @@ class ModelConfig:
     temperature: float | None = None
     top_p: float | None = None
     seed: int | None = None
+    stop: list[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -149,6 +150,14 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         if not isinstance(seed_override, int):
             raise ValueError(f"model.seed must be an integer. Got: {seed_override!r}")
 
+    stop_sequences = model_map.get("stop")
+    if stop_sequences is not None:
+        if not isinstance(stop_sequences, list):
+            raise ValueError(f"model.stop must be a list of strings. Got: {stop_sequences!r}")
+        for i, s in enumerate(stop_sequences):
+            if not isinstance(s, str):
+                raise ValueError(f"model.stop[{i}] must be a string. Got: {s!r}")
+
     model_cfg = ModelConfig(
         name=model_name,
         model_name=model_name_override,
@@ -160,6 +169,7 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         temperature=temperature,
         top_p=top_p,
         seed=seed_override,
+        stop=stop_sequences,
     )
 
     dataset_map = _require_mapping(_require_field(data, "dataset", ctx="top-level config"), ctx="dataset config")

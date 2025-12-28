@@ -31,6 +31,7 @@ class VLLMModel(Model):
         temperature: float | None = None,
         top_p: float | None = None,
         seed: int | None = None,
+        stop: list[str] | None = None,
     ) -> None:
         if model_name is None:
             raise ValueError("model_name must be provided for the vLLM model.")
@@ -51,6 +52,7 @@ class VLLMModel(Model):
         self._temperature = temperature
         self._top_p = top_p
         self._seed = seed
+        self._stop = stop
 
     def generate(self, questions: List[str], *, max_tokens: int | None = None) -> List[str]:
         max_tokens_value = (
@@ -68,6 +70,8 @@ class VLLMModel(Model):
             sampling_kwargs["top_p"] = self._top_p
         if self._seed is not None:
             sampling_kwargs["seed"] = self._seed
+        if self._stop is not None:
+            sampling_kwargs["stop"] = self._stop
 
         sampling_params = SamplingParams(**sampling_kwargs)
 
