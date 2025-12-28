@@ -9,7 +9,7 @@ model:
   tensor_parallel_size: 1
   gpu_memory_utilization: 0.8
   max_model_len: 1024
-  dtype: "auto"
+  dtype: "float16"
   max_tokens: 64
   temperature: 0.0
   top_p: 1.0

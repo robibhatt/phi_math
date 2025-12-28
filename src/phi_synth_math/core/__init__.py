@@ -2,8 +2,10 @@
 
 from .config import DatasetConfig, EvalConfig, ModelConfig, load_eval_config
 from .jsonl import read_jsonl, write_jsonl
-from .registry import DATASET_REGISTRY, MODEL_REGISTRY, make_dataset, make_model
 from .run_dir import make_run_dir, save_config_snapshot
+
+# Note: registry imports removed to avoid circular import.
+# Import directly: from phi_synth_math.core.registry import make_model, make_dataset
 
 __all__ = [
     "DatasetConfig",
@@ -12,10 +14,6 @@ __all__ = [
     "load_eval_config",
     "read_jsonl",
     "write_jsonl",
-    "DATASET_REGISTRY",
-    "MODEL_REGISTRY",
-    "make_dataset",
-    "make_model",
     "make_run_dir",
     "save_config_snapshot",
 ]

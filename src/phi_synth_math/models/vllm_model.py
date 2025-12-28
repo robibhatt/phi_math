@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import os
 from typing import List
 
-from vllm import LLM, SamplingParams
-
-from .base import Model
-
-
-"""
+# V100-safe environment variables (must be set before vLLM import)
 os.environ.setdefault("VLLM_USE_V1", "0")  # force legacy engine (usually most stable)
 os.environ.setdefault("VLLM_DISABLE_CUSTOM_ALL_REDUCE", "1")  # avoid custom all-reduce kernel
 os.environ.setdefault("VLLM_USE_CUDA_GRAPH", "0")  # disable cudagraph capture
 os.environ.setdefault("VLLM_ENFORCE_EAGER", "1")  # avoid torch.compile paths
-"""
+
+from vllm import LLM, SamplingParams
+
+from .base import Model
 
 
 class VLLMModel(Model):
