@@ -1,12 +1,12 @@
-task_name: "gsm8k_5shot"
+task_name: "gsm8k_8shot"
 results_root: "results/eval"
 seed: 42
 n_examples: 200
 batch_size: 32
 
 prompt:
-  few_shot_count: 5
-  few_shot_split: "train"
+  few_shot_count: 8
+  static_examples: "gsm8k_8shot"
   example_format: "Q: {question}\nA: {answer}\n\n"
   test_format: "Q: {question}\nA:"
 
@@ -17,10 +17,11 @@ model:
   gpu_memory_utilization: 0.8
   max_model_len: 2048
   dtype: "float16"
-  max_tokens: 256
+  max_tokens: 512
   temperature: 0.0
   top_p: 1.0
-  stop: ["#####"]
+  repetition_penalty: 1.1
+  stop: ["Q:", "</s>", "<|im_end|>"]
 
 dataset:
   name: "gsm8k"

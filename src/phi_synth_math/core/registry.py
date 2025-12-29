@@ -56,6 +56,7 @@ def make_model(cfg: ModelConfig) -> Model:
             top_p=cfg.top_p,
             seed=cfg.seed,
             stop=cfg.stop,
+            repetition_penalty=cfg.repetition_penalty,
         )
 
     raise ValueError(f"No construction path for model '{cfg.name}'.")

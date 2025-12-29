@@ -8,6 +8,22 @@ from typing import Any
 from phi_synth_math.core.config import PromptConfig
 from phi_synth_math.tasks.core.metadata import TaskSpec
 
+# Registry of static few-shot example sets
+_STATIC_EXAMPLES_REGISTRY: dict[str, list[dict[str, str]]] = {}
+
+
+def _get_static_examples(name: str) -> list[dict[str, str]]:
+    """Get static examples by name, loading them lazily."""
+    if name not in _STATIC_EXAMPLES_REGISTRY:
+        if name == "gsm8k_8shot":
+            from phi_synth_math.tasks.benchmarks.gsm8k.few_shot_examples import (
+                GSM8K_8SHOT_EXAMPLES,
+            )
+            _STATIC_EXAMPLES_REGISTRY[name] = GSM8K_8SHOT_EXAMPLES
+        else:
+            raise ValueError(f"Unknown static examples set: {name!r}")
+    return _STATIC_EXAMPLES_REGISTRY[name]
+
 
 class PromptBuilder:
     """Builds prompts with few-shot examples from a dataset's train split."""
@@ -18,7 +34,7 @@ class PromptBuilder:
         self._few_shot_examples: list[dict[str, Any]] = []
 
     def load_few_shot_examples(self, seed: int) -> None:
-        """Load few-shot examples from the configured split.
+        """Load few-shot examples from the configured split or static set.
 
         Args:
             seed: Random seed for reproducible example selection.
@@ -26,6 +42,13 @@ class PromptBuilder:
         """
         if self.config.few_shot_count <= 0:
             self._few_shot_examples = []
+            return
+
+        # Check if using static (hardcoded) examples
+        if self.config.static_examples is not None:
+            static = _get_static_examples(self.config.static_examples)
+            # Use up to few_shot_count examples from the static set
+            self._few_shot_examples = static[: self.config.few_shot_count]
             return
 
         # Use few_shot_seed if specified, otherwise use the provided seed

@@ -32,6 +32,7 @@ class VLLMModel(Model):
         top_p: float | None = None,
         seed: int | None = None,
         stop: list[str] | None = None,
+        repetition_penalty: float | None = None,
     ) -> None:
         if model_name is None:
             raise ValueError("model_name must be provided for the vLLM model.")
@@ -53,6 +54,7 @@ class VLLMModel(Model):
         self._top_p = top_p
         self._seed = seed
         self._stop = stop
+        self._repetition_penalty = repetition_penalty
 
     def generate(self, questions: List[str], *, max_tokens: int | None = None) -> List[str]:
         max_tokens_value = (
@@ -73,6 +75,8 @@ class VLLMModel(Model):
         if self._stop is not None:
             sampling_kwargs["stop"] = self._stop
             sampling_kwargs["include_stop_str_in_output"] = True
+        if self._repetition_penalty is not None:
+            sampling_kwargs["repetition_penalty"] = self._repetition_penalty
 
         sampling_params = SamplingParams(**sampling_kwargs)
 

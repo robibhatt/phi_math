@@ -20,6 +20,7 @@ class ModelConfig:
     top_p: float | None = None
     seed: int | None = None
     stop: list[str] | None = None
+    repetition_penalty: float | None = None
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class PromptConfig:
     few_shot_seed: int | None = None
     example_format: str = "Q: {question}\nA: {answer}\n\n"
     test_format: str = "Q: {question}\nA:"
+    static_examples: str | None = None  # e.g., "gsm8k_8shot" to use canonical examples
 
 
 @dataclass(frozen=True)
@@ -158,6 +160,12 @@ def load_eval_config(path: Path | str) -> EvalConfig:
             if not isinstance(s, str):
                 raise ValueError(f"model.stop[{i}] must be a string. Got: {s!r}")
 
+    repetition_penalty = model_map.get("repetition_penalty")
+    if repetition_penalty is not None:
+        if not isinstance(repetition_penalty, (int, float)):
+            raise ValueError(f"model.repetition_penalty must be numeric. Got: {repetition_penalty!r}")
+        repetition_penalty = float(repetition_penalty)
+
     model_cfg = ModelConfig(
         name=model_name,
         model_name=model_name_override,
@@ -170,6 +178,7 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         top_p=top_p,
         seed=seed_override,
         stop=stop_sequences,
+        repetition_penalty=repetition_penalty,
     )
 
     dataset_map = _require_mapping(_require_field(data, "dataset", ctx="top-level config"), ctx="dataset config")
@@ -216,12 +225,17 @@ def load_eval_config(path: Path | str) -> EvalConfig:
         if not isinstance(test_format, str):
             raise ValueError(f"prompt.test_format must be a string. Got: {test_format!r}")
 
+        static_examples = prompt_map.get("static_examples")
+        if static_examples is not None and not isinstance(static_examples, str):
+            raise ValueError(f"prompt.static_examples must be a string. Got: {static_examples!r}")
+
         prompt_cfg = PromptConfig(
             few_shot_count=few_shot_count,
             few_shot_split=few_shot_split,
             few_shot_seed=few_shot_seed,
             example_format=example_format,
             test_format=test_format,
+            static_examples=static_examples,
         )
 
     return EvalConfig(
