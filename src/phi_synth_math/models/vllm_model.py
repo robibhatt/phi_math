@@ -82,16 +82,10 @@ class VLLMModel(Model):
 
         outputs = self._llm.generate(questions, sampling_params)
 
-        # vLLM generally preserves input order, but make ordering explicit by request_id.
-        # In most vLLM versions, request_id is the prompt index as a string: "0", "1", ...
-        by_id = {out.request_id: out for out in outputs}
-
-        generations: List[str] = []
-        for i in range(len(questions)):
-            out = by_id.get(str(i))
-            if out is None or not out.outputs:
-                generations.append("")
-            else:
-                generations.append(out.outputs[0].text.strip())
+        # vLLM preserves input order in the output list
+        generations = [
+            (out.outputs[0].text.strip() if out.outputs else "")
+            for out in outputs
+        ]
 
         return generations
