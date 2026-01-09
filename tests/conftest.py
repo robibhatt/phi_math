@@ -38,6 +38,7 @@ def sample_config_dict() -> dict:
         "dataset": {
             "name": "dummy_math_addition",
             "max_int": 10,
+            "split": "test",
         },
     }
 

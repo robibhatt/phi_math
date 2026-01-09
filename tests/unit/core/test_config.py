@@ -27,7 +27,7 @@ class TestLoadEvalConfig:
             "n_examples": 10,
             "batch_size": 5,
             "model": {"name": "dummy"},
-            "dataset": {"name": "dummy_math_addition"},
+            "dataset": {"name": "dummy_math_addition", "split": "test"},
         }
         config_path = tmp_dir / "config.yaml"
         with config_path.open("w") as f:
@@ -42,6 +42,7 @@ class TestLoadEvalConfig:
         assert config.batch_size == 5
         assert config.model.name == "dummy"
         assert config.dataset.name == "dummy_math_addition"
+        assert config.dataset.split == "test"
         assert config.prompt is None
 
     @pytest.mark.unit
@@ -97,7 +98,7 @@ class TestLoadEvalConfig:
             "n_examples": 10,
             "batch_size": 0,  # Invalid: must be > 0
             "model": {"name": "dummy"},
-            "dataset": {"name": "dummy_math_addition"},
+            "dataset": {"name": "dummy_math_addition", "split": "test"},
         }
         config_path = tmp_dir / "config.yaml"
         with config_path.open("w") as f:

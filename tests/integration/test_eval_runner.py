@@ -24,7 +24,7 @@ class TestEvalRunnerIntegration:
             "n_examples": 5,
             "batch_size": 2,
             "model": {"name": "dummy"},
-            "dataset": {"name": "dummy_math_addition", "max_int": 10},
+            "dataset": {"name": "dummy_math_addition", "max_int": 10, "split": "test"},
         }
         config_path = tmp_dir / "config.yaml"
         with config_path.open("w") as f:
@@ -68,7 +68,7 @@ class TestEvalRunnerIntegration:
             "n_examples": 3,
             "batch_size": 3,
             "model": {"name": "dummy"},
-            "dataset": {"name": "dummy_math_addition", "max_int": 5},
+            "dataset": {"name": "dummy_math_addition", "max_int": 5, "split": "test"},
             "prompt": {
                 "few_shot_count": 2,
                 "static_examples": "gsm8k/8shot_cot",
@@ -109,7 +109,7 @@ class TestEvalRunnerIntegration:
             "n_examples": 7,  # Not divisible by batch_size
             "batch_size": 3,  # Will have batches: 3, 3, 1 (tail)
             "model": {"name": "dummy"},
-            "dataset": {"name": "dummy_math_addition", "max_int": 10},
+            "dataset": {"name": "dummy_math_addition", "max_int": 10, "split": "test"},
         }
         config_path = tmp_dir / "config.yaml"
         with config_path.open("w") as f:

@@ -5,7 +5,8 @@ n_examples: 200
 batch_size: 32
 
 prompt:
-  few_shot_count: 5
+  few_shot_count: 8
+  few_shot_split: "train"
   few_shot_seed: 42
   example_format: "Q: {question}\nA: {answer}\n\n"
   test_format: "Q: {question}\nA:"
@@ -21,7 +22,7 @@ model:
   temperature: 0.0
   top_p: 1.0
   repetition_penalty: 1.1
-  stop: ["Q:", "</s>", "<|im_end|>"]
+  stop: ["Q:", "</s>", "<|im_end|>", "#####"]
 
 dataset:
   name: "gsm8k"

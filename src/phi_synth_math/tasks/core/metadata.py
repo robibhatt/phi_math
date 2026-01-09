@@ -35,7 +35,7 @@ TASK_SPECS: dict[str, TaskSpec] = {
     "dummy_math_addition": TaskSpec(
         dataset_builder=DummyMathAdditionDataset,
         scorer=dummy_addition_scoring.score,
-        default_dataset_params={"max_int": 20},
+        default_dataset_params={"max_int": 20, "split": "test"},
         prompt_template="{question}",
     ),
     "gsm8k": TaskSpec(
