@@ -1,12 +1,12 @@
-task_name: "gsm8k_8shot"
+task_name: "gsm8k"
 results_root: "results/eval"
 seed: 42
 n_examples: 200
 batch_size: 32
 
 prompt:
-  few_shot_count: 8
-  static_examples: "gsm8k_8shot"
+  few_shot_count: 5
+  few_shot_seed: 42
   example_format: "Q: {question}\nA: {answer}\n\n"
   test_format: "Q: {question}\nA:"
 

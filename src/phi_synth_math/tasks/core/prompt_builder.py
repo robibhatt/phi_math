@@ -2,27 +2,54 @@
 
 from __future__ import annotations
 
+import json
 import random
+from pathlib import Path
 from typing import Any
 
 from phi_synth_math.core.config import PromptConfig
 from phi_synth_math.tasks.core.metadata import TaskSpec
 
-# Registry of static few-shot example sets
-_STATIC_EXAMPLES_REGISTRY: dict[str, list[dict[str, str]]] = {}
 
+def _load_static_examples(name: str) -> list[dict[str, str]]:
+    """Load static examples from a JSON file.
 
-def _get_static_examples(name: str) -> list[dict[str, str]]:
-    """Get static examples by name, loading them lazily."""
-    if name not in _STATIC_EXAMPLES_REGISTRY:
-        if name == "gsm8k_8shot":
-            from phi_synth_math.tasks.benchmarks.gsm8k.few_shot_examples import (
-                GSM8K_8SHOT_EXAMPLES,
-            )
-            _STATIC_EXAMPLES_REGISTRY[name] = GSM8K_8SHOT_EXAMPLES
-        else:
-            raise ValueError(f"Unknown static examples set: {name!r}")
-    return _STATIC_EXAMPLES_REGISTRY[name]
+    Args:
+        name: Path in format "task/prompt_name" (e.g., "gsm8k/8shot_cot").
+              Resolves to: benchmarks/{task}/prompts/{prompt_name}.json
+
+    Returns:
+        List of example dicts with "question" and "answer" keys.
+
+    Raises:
+        ValueError: If name format is invalid.
+        FileNotFoundError: If the JSON file doesn't exist.
+    """
+    parts = name.split("/")
+    if len(parts) != 2:
+        raise ValueError(
+            f"static_examples must be in 'task/name' format (e.g., 'gsm8k/8shot_cot'), "
+            f"got: {name!r}"
+        )
+    task, prompt_name = parts
+
+    # Resolve path relative to this file: core/ -> benchmarks/{task}/prompts/
+    benchmarks_dir = Path(__file__).parent.parent / "benchmarks"
+    json_path = benchmarks_dir / task / "prompts" / f"{prompt_name}.json"
+
+    if not json_path.exists():
+        raise FileNotFoundError(
+            f"Prompt examples file not found: {json_path}\n"
+            f"Create a JSON file with a list of {{'question': ..., 'answer': ...}} objects."
+        )
+
+    with json_path.open("r", encoding="utf-8") as f:
+        examples = json.load(f)
+
+    if not isinstance(examples, list):
+        raise ValueError(f"Expected a JSON array in {json_path}, got {type(examples).__name__}")
+
+    return examples
 
 
 class PromptBuilder:
@@ -44,9 +71,9 @@ class PromptBuilder:
             self._few_shot_examples = []
             return
 
-        # Check if using static (hardcoded) examples
+        # Check if using static examples from file
         if self.config.static_examples is not None:
-            static = _get_static_examples(self.config.static_examples)
+            static = _load_static_examples(self.config.static_examples)
             # Use up to few_shot_count examples from the static set
             self._few_shot_examples = static[: self.config.few_shot_count]
             return
