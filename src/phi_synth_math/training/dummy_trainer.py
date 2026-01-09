@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from phi_synth_math.core.config import TrainingConfig
 
 
 class DummyTrainer:
@@ -14,8 +17,13 @@ class DummyTrainer:
     the training pipeline without actual model training.
     """
 
-    def __init__(self) -> None:
-        """Initialize dummy trainer."""
+    def __init__(self, config: TrainingConfig) -> None:
+        """Initialize dummy trainer.
+
+        Args:
+            config: Training configuration (not used, but accepted for API consistency).
+        """
+        self._config = config
         self._trained = False
 
     def train(self) -> dict[str, Any]:

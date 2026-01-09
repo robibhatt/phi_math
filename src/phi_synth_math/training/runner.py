@@ -141,7 +141,7 @@ class TrainingRunner:
         _save_config_snapshot(run_dir, config)
 
         # Create and run trainer
-        trainer = make_trainer(trainer_name)
+        trainer = make_trainer(trainer_name, config)
         metrics = trainer.train()
 
         # Save adapter

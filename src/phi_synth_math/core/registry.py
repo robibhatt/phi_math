@@ -9,8 +9,9 @@ from phi_synth_math.tasks.core.dataset import Dataset
 from phi_synth_math.tasks.core.metadata import TASK_SPECS, get_task_spec
 from phi_synth_math.training.base import Trainer
 from phi_synth_math.training.dummy_trainer import DummyTrainer
+from phi_synth_math.training.hf_trainer import HFTrainer
 
-from .config import DatasetConfig, ModelConfig
+from .config import DatasetConfig, ModelConfig, TrainingConfig
 
 
 DATASET_REGISTRY: Dict[str, Callable[..., Dataset]] = {
@@ -24,6 +25,7 @@ MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
 
 TRAINER_REGISTRY: Dict[str, Callable[..., Trainer]] = {
     "dummy": DummyTrainer,
+    "hf": HFTrainer,
 }
 
 
@@ -68,11 +70,12 @@ def make_model(cfg: ModelConfig) -> Model:
     raise ValueError(f"No construction path for model '{cfg.name}'.")
 
 
-def make_trainer(name: str) -> Trainer:
+def make_trainer(name: str, config: TrainingConfig) -> Trainer:
     """Create a trainer by name.
 
     Args:
         name: Name of the trainer (e.g., "dummy", "hf").
+        config: Training configuration.
 
     Returns:
         Trainer instance.
@@ -84,4 +87,4 @@ def make_trainer(name: str) -> Trainer:
     if factory is None:
         available = ", ".join(sorted(TRAINER_REGISTRY))
         raise ValueError(f"Unknown trainer '{name}'. Available: {available}")
-    return factory()
+    return factory(config)
