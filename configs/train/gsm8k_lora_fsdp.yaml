@@ -1,0 +1,91 @@
+# GSM8K LoRA Fine-tuning with FSDP (Multi-GPU)
+#
+# Launch with torchrun for multi-GPU training:
+#   torchrun --nproc_per_node=4 -m scripts.run_train --config configs/train/gsm8k_lora_fsdp.yaml
+#
+# Or use the convenience script:
+#   ./scripts/run_train_fsdp.sh --config configs/train/gsm8k_lora_fsdp.yaml --num_gpus 4
+
+task_name: "gsm8k"
+results_root: "results/train"
+seed: 42
+base_model: "microsoft/phi-1_5"
+trainer: "hf"
+
+lora:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+hyperparams:
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0002
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  lr_scheduler_type: "cosine"
+  logging_steps: 10
+  save_steps: 500
+  max_seq_length: 512
+  # Mixed precision: "fp16" for V100s, "bf16" for A100+, "no" for fp32
+  mixed_precision: "fp16"
+
+wandb:
+  project: "phi-math-finetune"
+  entity: ""
+  run_name: "gsm8k-lora-fsdp"
+  tags: ["lora", "gsm8k", "fsdp"]
+  enabled: true
+
+train_dataset:
+  name: "gsm8k"
+  split: "train"
+
+# FSDP Configuration for multi-GPU distributed training
+fsdp:
+  enabled: true
+
+  # Sharding strategy - how to distribute model across GPUs
+  # Options: FULL_SHARD, SHARD_GRAD_OP, NO_SHARD, HYBRID_SHARD, HYBRID_SHARD_ZERO2
+  # - FULL_SHARD: Maximum memory savings (shard params, grads, optimizer states)
+  # - SHARD_GRAD_OP: Shard grads and optimizer states only (faster, more memory)
+  # - NO_SHARD: Like DDP (no sharding)
+  # - HYBRID_SHARD: Shard within node, replicate across nodes
+  sharding_strategy: "FULL_SHARD"
+
+  # CPU offloading - offload params/grads to CPU (slower but less GPU memory)
+  cpu_offload: false
+
+  # Auto-wrapping policy
+  auto_wrap_policy: "TRANSFORMER_BASED_WRAP"
+
+  # Transformer layer class to wrap (model-specific)
+  # Common values: PhiDecoderLayer, LlamaDecoderLayer, GPT2Block, etc.
+  transformer_layer_cls_to_wrap: "PhiDecoderLayer"
+
+  # Minimum params for SIZE_BASED_WRAP (only used if auto_wrap_policy is SIZE_BASED_WRAP)
+  min_num_params: 100000000
+
+  # State dict type for checkpointing
+  # Options: FULL_STATE_DICT, LOCAL_STATE_DICT, SHARDED_STATE_DICT
+  # SHARDED_STATE_DICT is recommended for large models (faster, less memory)
+  state_dict_type: "SHARDED_STATE_DICT"
+
+  # Communication overlap settings
+  backward_prefetch: "BACKWARD_PRE"
+  forward_prefetch: false
+
+  # Initialization settings
+  sync_module_states: true  # Sync params across ranks at init
+  use_orig_params: true     # Required for torch.compile compatibility
+  cpu_ram_efficient_loading: true  # Load on rank 0, scatter to others
+  limit_all_gathers: true   # Prevent OOM from too many in-flight all-gathers
+
+  # Activation checkpointing - trade compute for memory
+  # Enable for very large models that don't fit in GPU memory
+  activation_checkpointing: false

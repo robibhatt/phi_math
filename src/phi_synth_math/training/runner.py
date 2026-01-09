@@ -78,6 +78,7 @@ def _save_config_snapshot(run_dir: Path, config: TrainingConfig) -> None:
             "logging_steps": config.hyperparams.logging_steps,
             "save_steps": config.hyperparams.save_steps,
             "max_seq_length": config.hyperparams.max_seq_length,
+            "mixed_precision": config.hyperparams.mixed_precision,
         },
         "wandb": {
             "project": config.wandb.project,
@@ -91,6 +92,25 @@ def _save_config_snapshot(run_dir: Path, config: TrainingConfig) -> None:
             "split": config.train_dataset.split,
         },
     }
+
+    # Add FSDP config if present
+    if config.fsdp is not None:
+        config_dict["fsdp"] = {
+            "enabled": config.fsdp.enabled,
+            "sharding_strategy": config.fsdp.sharding_strategy,
+            "cpu_offload": config.fsdp.cpu_offload,
+            "auto_wrap_policy": config.fsdp.auto_wrap_policy,
+            "transformer_layer_cls_to_wrap": config.fsdp.transformer_layer_cls_to_wrap,
+            "min_num_params": config.fsdp.min_num_params,
+            "state_dict_type": config.fsdp.state_dict_type,
+            "backward_prefetch": config.fsdp.backward_prefetch,
+            "forward_prefetch": config.fsdp.forward_prefetch,
+            "sync_module_states": config.fsdp.sync_module_states,
+            "use_orig_params": config.fsdp.use_orig_params,
+            "cpu_ram_efficient_loading": config.fsdp.cpu_ram_efficient_loading,
+            "limit_all_gathers": config.fsdp.limit_all_gathers,
+            "activation_checkpointing": config.fsdp.activation_checkpointing,
+        }
 
     config_path = run_dir / "config.yaml"
     with config_path.open("w", encoding="utf-8") as f:

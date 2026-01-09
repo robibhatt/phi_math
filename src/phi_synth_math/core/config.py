@@ -25,6 +25,26 @@ class ModelConfig:
 
 VALID_SPLITS: tuple[str, ...] = ("train", "val", "test")
 VALID_TRAINERS: tuple[str, ...] = ("dummy", "hf")
+VALID_MIXED_PRECISION: tuple[str, ...] = ("no", "fp16", "bf16")
+
+# FSDP validation constants
+VALID_FSDP_SHARDING_STRATEGIES: tuple[str, ...] = (
+    "FULL_SHARD",
+    "SHARD_GRAD_OP",
+    "NO_SHARD",
+    "HYBRID_SHARD",
+    "HYBRID_SHARD_ZERO2",
+)
+VALID_FSDP_STATE_DICT_TYPES: tuple[str, ...] = (
+    "FULL_STATE_DICT",
+    "LOCAL_STATE_DICT",
+    "SHARDED_STATE_DICT",
+)
+VALID_FSDP_BACKWARD_PREFETCH: tuple[str, ...] = (
+    "BACKWARD_PRE",
+    "BACKWARD_POST",
+    "NO_PREFETCH",
+)
 
 
 @dataclass(frozen=True)
@@ -88,6 +108,31 @@ class TrainingHyperparamsConfig:
     logging_steps: int
     save_steps: int
     max_seq_length: int
+    mixed_precision: str = "fp16"  # Options: "no", "fp16", "bf16" (default fp16 for V100 compat)
+
+
+@dataclass(frozen=True)
+class FSDPConfig:
+    """FSDP (Fully Sharded Data Parallel) configuration.
+
+    Enables distributed training with model/gradient/optimizer sharding.
+    Uses HuggingFace Trainer's built-in FSDP support via Accelerate.
+    """
+
+    enabled: bool = False
+    sharding_strategy: str = "FULL_SHARD"
+    cpu_offload: bool = False
+    auto_wrap_policy: str = "TRANSFORMER_BASED_WRAP"
+    transformer_layer_cls_to_wrap: str | None = None
+    min_num_params: int = 100_000_000
+    state_dict_type: str = "SHARDED_STATE_DICT"
+    backward_prefetch: str = "BACKWARD_PRE"
+    forward_prefetch: bool = False
+    sync_module_states: bool = True
+    use_orig_params: bool = True
+    cpu_ram_efficient_loading: bool = True
+    limit_all_gathers: bool = True
+    activation_checkpointing: bool = False
 
 
 @dataclass(frozen=True)
@@ -101,6 +146,7 @@ class TrainingConfig:
     hyperparams: TrainingHyperparamsConfig
     wandb: WandbConfig
     train_dataset: DatasetConfig
+    fsdp: FSDPConfig | None = None  # Optional FSDP configuration
 
 
 def _require_mapping(obj: Any, *, ctx: str) -> dict[str, Any]:
@@ -437,6 +483,16 @@ def load_training_config(path: Path | str) -> TrainingConfig:
     if not isinstance(max_seq_length, int):
         raise ValueError(f"Missing required field 'max_seq_length' in hyperparams config.")
 
+    # Parse optional mixed_precision (default: fp16 for V100 compatibility)
+    mixed_precision = hyperparams_map.get("mixed_precision", "fp16")
+    if not isinstance(mixed_precision, str):
+        raise ValueError(f"hyperparams.mixed_precision must be a string. Got: {mixed_precision!r}")
+    if mixed_precision not in VALID_MIXED_PRECISION:
+        raise ValueError(
+            f"hyperparams.mixed_precision must be one of {VALID_MIXED_PRECISION}. "
+            f"Got: {mixed_precision!r}"
+        )
+
     hyperparams_cfg = TrainingHyperparamsConfig(
         num_train_epochs=num_train_epochs,
         per_device_train_batch_size=per_device_train_batch_size,
@@ -449,6 +505,7 @@ def load_training_config(path: Path | str) -> TrainingConfig:
         logging_steps=logging_steps,
         save_steps=save_steps,
         max_seq_length=max_seq_length,
+        mixed_precision=mixed_precision,
     )
 
     # Parse wandb config
@@ -500,6 +557,119 @@ def load_training_config(path: Path | str) -> TrainingConfig:
         split=train_dataset_split,
     )
 
+    # Parse optional FSDP config
+    fsdp_cfg: FSDPConfig | None = None
+    fsdp_map = data.get("fsdp")
+    if fsdp_map is not None:
+        fsdp_map = _require_mapping(fsdp_map, ctx="fsdp config")
+
+        # Parse enabled (default: False)
+        fsdp_enabled = fsdp_map.get("enabled", False)
+        if not isinstance(fsdp_enabled, bool):
+            raise ValueError(f"fsdp.enabled must be a boolean. Got: {fsdp_enabled!r}")
+
+        # Parse sharding_strategy (default: FULL_SHARD)
+        sharding_strategy = fsdp_map.get("sharding_strategy", "FULL_SHARD")
+        if not isinstance(sharding_strategy, str):
+            raise ValueError(
+                f"fsdp.sharding_strategy must be a string. Got: {sharding_strategy!r}"
+            )
+        if sharding_strategy not in VALID_FSDP_SHARDING_STRATEGIES:
+            raise ValueError(
+                f"fsdp.sharding_strategy must be one of {VALID_FSDP_SHARDING_STRATEGIES}. "
+                f"Got: {sharding_strategy!r}"
+            )
+
+        # Parse cpu_offload (default: False)
+        cpu_offload = fsdp_map.get("cpu_offload", False)
+        if not isinstance(cpu_offload, bool):
+            raise ValueError(f"fsdp.cpu_offload must be a boolean. Got: {cpu_offload!r}")
+
+        # Parse auto_wrap_policy (default: TRANSFORMER_BASED_WRAP)
+        auto_wrap_policy = fsdp_map.get("auto_wrap_policy", "TRANSFORMER_BASED_WRAP")
+        if not isinstance(auto_wrap_policy, str):
+            raise ValueError(
+                f"fsdp.auto_wrap_policy must be a string. Got: {auto_wrap_policy!r}"
+            )
+
+        # Parse transformer_layer_cls_to_wrap (optional)
+        transformer_layer_cls = fsdp_map.get("transformer_layer_cls_to_wrap")
+        if transformer_layer_cls is not None and not isinstance(transformer_layer_cls, str):
+            raise ValueError(
+                f"fsdp.transformer_layer_cls_to_wrap must be a string. "
+                f"Got: {transformer_layer_cls!r}"
+            )
+
+        # Parse min_num_params (default: 100_000_000)
+        min_num_params = fsdp_map.get("min_num_params", 100_000_000)
+        if not isinstance(min_num_params, int):
+            raise ValueError(
+                f"fsdp.min_num_params must be an integer. Got: {min_num_params!r}"
+            )
+        if min_num_params < 0:
+            raise ValueError(f"fsdp.min_num_params must be >= 0. Got: {min_num_params}")
+
+        # Parse state_dict_type (default: SHARDED_STATE_DICT)
+        state_dict_type = fsdp_map.get("state_dict_type", "SHARDED_STATE_DICT")
+        if not isinstance(state_dict_type, str):
+            raise ValueError(
+                f"fsdp.state_dict_type must be a string. Got: {state_dict_type!r}"
+            )
+        if state_dict_type not in VALID_FSDP_STATE_DICT_TYPES:
+            raise ValueError(
+                f"fsdp.state_dict_type must be one of {VALID_FSDP_STATE_DICT_TYPES}. "
+                f"Got: {state_dict_type!r}"
+            )
+
+        # Parse backward_prefetch (default: BACKWARD_PRE)
+        backward_prefetch = fsdp_map.get("backward_prefetch", "BACKWARD_PRE")
+        if not isinstance(backward_prefetch, str):
+            raise ValueError(
+                f"fsdp.backward_prefetch must be a string. Got: {backward_prefetch!r}"
+            )
+        if backward_prefetch not in VALID_FSDP_BACKWARD_PREFETCH:
+            raise ValueError(
+                f"fsdp.backward_prefetch must be one of {VALID_FSDP_BACKWARD_PREFETCH}. "
+                f"Got: {backward_prefetch!r}"
+            )
+
+        # Parse boolean flags with defaults
+        forward_prefetch = fsdp_map.get("forward_prefetch", False)
+        sync_module_states = fsdp_map.get("sync_module_states", True)
+        use_orig_params = fsdp_map.get("use_orig_params", True)
+        cpu_ram_efficient_loading = fsdp_map.get("cpu_ram_efficient_loading", True)
+        limit_all_gathers = fsdp_map.get("limit_all_gathers", True)
+        activation_checkpointing = fsdp_map.get("activation_checkpointing", False)
+
+        # Validate all boolean flags
+        for name, val in [
+            ("forward_prefetch", forward_prefetch),
+            ("sync_module_states", sync_module_states),
+            ("use_orig_params", use_orig_params),
+            ("cpu_ram_efficient_loading", cpu_ram_efficient_loading),
+            ("limit_all_gathers", limit_all_gathers),
+            ("activation_checkpointing", activation_checkpointing),
+        ]:
+            if not isinstance(val, bool):
+                raise ValueError(f"fsdp.{name} must be a boolean. Got: {val!r}")
+
+        fsdp_cfg = FSDPConfig(
+            enabled=fsdp_enabled,
+            sharding_strategy=sharding_strategy,
+            cpu_offload=cpu_offload,
+            auto_wrap_policy=auto_wrap_policy,
+            transformer_layer_cls_to_wrap=transformer_layer_cls,
+            min_num_params=min_num_params,
+            state_dict_type=state_dict_type,
+            backward_prefetch=backward_prefetch,
+            forward_prefetch=forward_prefetch,
+            sync_module_states=sync_module_states,
+            use_orig_params=use_orig_params,
+            cpu_ram_efficient_loading=cpu_ram_efficient_loading,
+            limit_all_gathers=limit_all_gathers,
+            activation_checkpointing=activation_checkpointing,
+        )
+
     return TrainingConfig(
         task_name=task_name,
         results_root=results_root,
@@ -510,4 +680,5 @@ def load_training_config(path: Path | str) -> TrainingConfig:
         hyperparams=hyperparams_cfg,
         wandb=wandb_cfg,
         train_dataset=train_dataset_cfg,
+        fsdp=fsdp_cfg,
     )

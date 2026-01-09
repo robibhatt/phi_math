@@ -379,3 +379,89 @@ class TestTrainingConfig:
 
         with pytest.raises(ValueError, match="trainer must be a string"):
             load_training_config(config_path)
+
+
+class TestMixedPrecisionConfig:
+    """Tests for mixed_precision field in hyperparams."""
+
+    @pytest.mark.unit
+    def test_mixed_precision_defaults_to_fp16(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Default is fp16 for V100 compatibility."""
+        # Don't include mixed_precision in config
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.hyperparams.mixed_precision == "fp16"
+
+    @pytest.mark.unit
+    def test_mixed_precision_fp16_parsed(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """fp16 option is correctly parsed."""
+        valid_training_config_dict["hyperparams"]["mixed_precision"] = "fp16"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.hyperparams.mixed_precision == "fp16"
+
+    @pytest.mark.unit
+    def test_mixed_precision_bf16_parsed(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """bf16 option is correctly parsed."""
+        valid_training_config_dict["hyperparams"]["mixed_precision"] = "bf16"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.hyperparams.mixed_precision == "bf16"
+
+    @pytest.mark.unit
+    def test_mixed_precision_no_parsed(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """'no' option (fp32) is correctly parsed."""
+        valid_training_config_dict["hyperparams"]["mixed_precision"] = "no"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.hyperparams.mixed_precision == "no"
+
+    @pytest.mark.unit
+    def test_mixed_precision_invalid_raises(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Invalid mixed_precision value raises ValueError."""
+        valid_training_config_dict["hyperparams"]["mixed_precision"] = "invalid"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="mixed_precision must be one of"):
+            load_training_config(config_path)
+
+    @pytest.mark.unit
+    def test_mixed_precision_must_be_string(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Non-string mixed_precision raises ValueError."""
+        valid_training_config_dict["hyperparams"]["mixed_precision"] = 16
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="mixed_precision must be a string"):
+            load_training_config(config_path)

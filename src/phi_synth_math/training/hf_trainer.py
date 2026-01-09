@@ -38,6 +38,64 @@ class HFTrainer:
         self._peft_model = None
         self._tokenizer = None
 
+    def _is_fsdp_enabled(self) -> bool:
+        """Check if FSDP is enabled in config."""
+        return self._config.fsdp is not None and self._config.fsdp.enabled
+
+    def _build_fsdp_args(self) -> tuple[str, dict[str, Any]]:
+        """Build fsdp and fsdp_config arguments for TrainingArguments.
+
+        Returns:
+            Tuple of (fsdp_options_str, fsdp_config_dict)
+        """
+        fsdp_cfg = self._config.fsdp
+        if fsdp_cfg is None or not fsdp_cfg.enabled:
+            return "", {}
+
+        # Map sharding strategy to HF format
+        sharding_map = {
+            "FULL_SHARD": "full_shard",
+            "SHARD_GRAD_OP": "shard_grad_op",
+            "NO_SHARD": "no_shard",
+            "HYBRID_SHARD": "hybrid_shard",
+            "HYBRID_SHARD_ZERO2": "hybrid_shard_zero2",
+        }
+
+        # Build fsdp options list
+        fsdp_options = [sharding_map[fsdp_cfg.sharding_strategy]]
+
+        if fsdp_cfg.cpu_offload:
+            fsdp_options.append("offload")
+
+        if fsdp_cfg.auto_wrap_policy:
+            fsdp_options.append("auto_wrap")
+
+        # Build fsdp_config dict
+        fsdp_config: dict[str, Any] = {
+            "backward_prefetch": fsdp_cfg.backward_prefetch.lower(),
+            "forward_prefetch": fsdp_cfg.forward_prefetch,
+            "limit_all_gathers": fsdp_cfg.limit_all_gathers,
+            "use_orig_params": fsdp_cfg.use_orig_params,
+            "cpu_ram_efficient_loading": fsdp_cfg.cpu_ram_efficient_loading,
+            "sync_module_states": fsdp_cfg.sync_module_states,
+            "state_dict_type": fsdp_cfg.state_dict_type,
+        }
+
+        # Add wrapping policy config
+        if fsdp_cfg.auto_wrap_policy == "TRANSFORMER_BASED_WRAP":
+            if fsdp_cfg.transformer_layer_cls_to_wrap:
+                fsdp_config["transformer_layer_cls_to_wrap"] = [
+                    fsdp_cfg.transformer_layer_cls_to_wrap
+                ]
+        elif fsdp_cfg.auto_wrap_policy == "SIZE_BASED_WRAP":
+            fsdp_config["min_num_params"] = fsdp_cfg.min_num_params
+
+        # Activation checkpointing
+        if fsdp_cfg.activation_checkpointing:
+            fsdp_config["activation_checkpointing"] = True
+
+        return " ".join(fsdp_options), fsdp_config
+
     def train(self) -> dict[str, Any]:
         """Run LoRA fine-tuning.
 
@@ -53,11 +111,18 @@ class HFTrainer:
         self._tokenizer.padding_side = "right"
 
         # Load base model
-        model = AutoModelForCausalLM.from_pretrained(
-            config.base_model,
-            torch_dtype="auto",
-            device_map="auto",
-        )
+        # FSDP is incompatible with device_map="auto" - must load without it
+        if self._is_fsdp_enabled():
+            model = AutoModelForCausalLM.from_pretrained(
+                config.base_model,
+                torch_dtype="auto",
+            )
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                config.base_model,
+                torch_dtype="auto",
+                device_map="auto",
+            )
 
         # Configure LoRA
         task_type_map = {
@@ -99,6 +164,9 @@ class HFTrainer:
         # Configure W&B
         report_to = "wandb" if config.wandb.enabled else "none"
 
+        # Build FSDP arguments
+        fsdp_options, fsdp_config = self._build_fsdp_args()
+
         # Training arguments
         training_args = TrainingArguments(
             output_dir=str(Path(config.results_root) / "checkpoints"),
@@ -116,8 +184,12 @@ class HFTrainer:
             report_to=report_to,
             run_name=config.wandb.run_name if config.wandb.enabled else None,
             seed=config.seed,
-            bf16=True,
+            fp16=(config.hyperparams.mixed_precision == "fp16"),
+            bf16=(config.hyperparams.mixed_precision == "bf16"),
             remove_unused_columns=False,
+            # FSDP arguments (empty strings/dicts become None)
+            fsdp=fsdp_options if fsdp_options else None,
+            fsdp_config=fsdp_config if fsdp_config else None,
         )
 
         # Initialize W&B if enabled
