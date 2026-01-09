@@ -22,6 +22,7 @@ def valid_training_config() -> TrainingConfig:
         results_root="/tmp/train_results",
         seed=42,
         base_model="dummy",
+        trainer="dummy",
         lora=LoRAConfig(
             r=8,
             lora_alpha=16,

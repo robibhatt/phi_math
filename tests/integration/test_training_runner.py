@@ -19,6 +19,7 @@ def valid_training_config_dict(tmp_dir: Path) -> dict:
         "results_root": str(tmp_dir),
         "seed": 42,
         "base_model": "microsoft/phi-1_5",
+        "trainer": "dummy",
         "lora": {
             "r": 8,
             "lora_alpha": 16,
@@ -69,7 +70,7 @@ class TestTrainingRunner:
         config = load_training_config(config_path)
         runner = TrainingRunner()
 
-        run_dir = runner.run(config, trainer_name="dummy")
+        run_dir = runner.run(config)
 
         # Should create timestamped directory under results_root
         assert run_dir.exists()
@@ -95,7 +96,7 @@ class TestTrainingRunner:
         config = load_training_config(config_path)
         runner = TrainingRunner()
 
-        run_dir = runner.run(config, trainer_name="dummy")
+        run_dir = runner.run(config)
 
         # Config snapshot should exist
         snapshot_path = run_dir / "config.yaml"
@@ -121,7 +122,7 @@ class TestTrainingRunner:
         config = load_training_config(config_path)
         runner = TrainingRunner()
 
-        run_dir = runner.run(config, trainer_name="dummy")
+        run_dir = runner.run(config)
 
         # Adapter directory should exist
         adapter_dir = run_dir / "adapter"
@@ -151,7 +152,7 @@ class TestTrainingRunner:
         config = load_training_config(config_path)
         runner = TrainingRunner()
 
-        run_dir = runner.run(config, trainer_name="dummy")
+        run_dir = runner.run(config)
 
         # metrics.json should exist
         metrics_path = run_dir / "metrics.json"
@@ -178,7 +179,7 @@ class TestTrainingRunner:
         config = load_training_config(config_path)
         runner = TrainingRunner()
 
-        run_dir = runner.run(config, trainer_name="dummy")
+        run_dir = runner.run(config)
 
         # Verify all expected outputs
         assert run_dir.exists()

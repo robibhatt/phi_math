@@ -29,13 +29,6 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="Path to training YAML config.",
     )
-    parser.add_argument(
-        "--trainer",
-        type=str,
-        default="dummy",
-        choices=["dummy", "hf"],
-        help="Trainer to use (default: dummy).",
-    )
     return parser.parse_args()
 
 
@@ -46,7 +39,7 @@ def main() -> None:
     config: TrainingConfig = load_training_config(config_path)
 
     runner = TrainingRunner()
-    run_dir = runner.run(config, trainer_name=args.trainer)
+    run_dir = runner.run(config)
 
     print(f"Training complete for task '{config.task_name}'.")
     print(f"Run directory: {run_dir}")

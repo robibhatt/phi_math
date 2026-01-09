@@ -57,6 +57,7 @@ def _save_config_snapshot(run_dir: Path, config: TrainingConfig) -> None:
         "results_root": config.results_root,
         "seed": config.seed,
         "base_model": config.base_model,
+        "trainer": config.trainer,
         "lora": {
             "r": config.lora.r,
             "lora_alpha": config.lora.lora_alpha,
@@ -118,16 +119,11 @@ class TrainingRunner:
     - Saving adapters and metrics
     """
 
-    def run(
-        self,
-        config: TrainingConfig,
-        trainer_name: str = "dummy",
-    ) -> Path:
+    def run(self, config: TrainingConfig) -> Path:
         """Run the training pipeline.
 
         Args:
             config: Training configuration.
-            trainer_name: Name of trainer to use ("dummy" or "hf").
 
         Returns:
             Path to the run directory containing all outputs.
@@ -141,7 +137,7 @@ class TrainingRunner:
         _save_config_snapshot(run_dir, config)
 
         # Create and run trainer
-        trainer = make_trainer(trainer_name, config)
+        trainer = make_trainer(config.trainer, config)
         metrics = trainer.train()
 
         # Save adapter

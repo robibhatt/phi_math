@@ -5,6 +5,7 @@ task_name: "gsm8k"
 results_root: "results/train"
 seed: 42
 base_model: "microsoft/phi-1_5"
+trainer: "hf"
 
 lora:
   r: 8

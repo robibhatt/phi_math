@@ -26,6 +26,7 @@ def valid_training_config_dict() -> dict:
         "results_root": "/tmp/train_results",
         "seed": 42,
         "base_model": "microsoft/phi-1_5",
+        "trainer": "dummy",
         "lora": {
             "r": 8,
             "lora_alpha": 16,
@@ -311,3 +312,70 @@ class TestTrainingConfig:
         assert isinstance(config.train_dataset, DatasetConfig)
         assert config.train_dataset.name == "gsm8k"
         assert config.train_dataset.split == "train"
+
+    @pytest.mark.unit
+    def test_load_training_config_parses_trainer_field(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Trainer field parsed from YAML."""
+        valid_training_config_dict["trainer"] = "hf"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.trainer == "hf"
+
+    @pytest.mark.unit
+    def test_trainer_field_accepts_dummy(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Trainer field accepts 'dummy' value."""
+        valid_training_config_dict["trainer"] = "dummy"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.trainer == "dummy"
+
+    @pytest.mark.unit
+    def test_missing_trainer_field_raises(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Missing trainer field raises ValueError."""
+        del valid_training_config_dict["trainer"]
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="Missing required field 'trainer'"):
+            load_training_config(config_path)
+
+    @pytest.mark.unit
+    def test_invalid_trainer_value_raises(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Invalid trainer value raises ValueError."""
+        valid_training_config_dict["trainer"] = "invalid_trainer"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="trainer must be one of"):
+            load_training_config(config_path)
+
+    @pytest.mark.unit
+    def test_trainer_must_be_string(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Non-string trainer raises ValueError."""
+        valid_training_config_dict["trainer"] = 123
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="trainer must be a string"):
+            load_training_config(config_path)

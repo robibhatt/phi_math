@@ -24,6 +24,7 @@ class ModelConfig:
 
 
 VALID_SPLITS: tuple[str, ...] = ("train", "val", "test")
+VALID_TRAINERS: tuple[str, ...] = ("dummy", "hf")
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,7 @@ class TrainingConfig:
     results_root: str
     seed: int
     base_model: str
+    trainer: str
     lora: LoRAConfig
     hyperparams: TrainingHyperparamsConfig
     wandb: WandbConfig
@@ -325,6 +327,14 @@ def load_training_config(path: Path | str) -> TrainingConfig:
     seed = seed_value
     base_model = str(_require_field(data, "base_model", ctx="top-level config"))
 
+    # Parse trainer field
+    trainer_value = _require_field(data, "trainer", ctx="top-level config")
+    if not isinstance(trainer_value, str):
+        raise ValueError(f"trainer must be a string. Got: {trainer_value!r}")
+    trainer = trainer_value
+    if trainer not in VALID_TRAINERS:
+        raise ValueError(f"trainer must be one of {VALID_TRAINERS}. Got: {trainer!r}")
+
     # Parse LoRA config
     lora_map = _require_mapping(
         _require_field(data, "lora", ctx="top-level config"), ctx="lora config"
@@ -495,6 +505,7 @@ def load_training_config(path: Path | str) -> TrainingConfig:
         results_root=results_root,
         seed=seed,
         base_model=base_model,
+        trainer=trainer,
         lora=lora_cfg,
         hyperparams=hyperparams_cfg,
         wandb=wandb_cfg,
