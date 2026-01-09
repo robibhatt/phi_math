@@ -7,6 +7,8 @@ from phi_synth_math.models.dummy import DummyModel
 from phi_synth_math.models.vllm_model import VLLMModel
 from phi_synth_math.tasks.core.dataset import Dataset
 from phi_synth_math.tasks.core.metadata import TASK_SPECS, get_task_spec
+from phi_synth_math.training.base import Trainer
+from phi_synth_math.training.dummy_trainer import DummyTrainer
 
 from .config import DatasetConfig, ModelConfig
 
@@ -20,14 +22,18 @@ MODEL_REGISTRY: Dict[str, Callable[..., Model]] = {
     "vllm": VLLMModel,
 }
 
+TRAINER_REGISTRY: Dict[str, Callable[..., Trainer]] = {
+    "dummy": DummyTrainer,
+}
+
 
 def make_dataset(cfg: DatasetConfig, *, n_examples: int, seed: int) -> Dataset:
     task_spec = get_task_spec(cfg.name)
     dataset_kwargs = dict(task_spec.default_dataset_params)
     if cfg.max_int is not None:
         dataset_kwargs["max_int"] = cfg.max_int
-    if cfg.split is not None:
-        dataset_kwargs["split"] = cfg.split
+    # Split is now mandatory in config
+    dataset_kwargs["split"] = cfg.split
 
     factory = DATASET_REGISTRY.get(cfg.name)
     if factory is None:
@@ -60,3 +66,22 @@ def make_model(cfg: ModelConfig) -> Model:
         )
 
     raise ValueError(f"No construction path for model '{cfg.name}'.")
+
+
+def make_trainer(name: str) -> Trainer:
+    """Create a trainer by name.
+
+    Args:
+        name: Name of the trainer (e.g., "dummy", "hf").
+
+    Returns:
+        Trainer instance.
+
+    Raises:
+        ValueError: If trainer name is unknown.
+    """
+    factory = TRAINER_REGISTRY.get(name)
+    if factory is None:
+        available = ", ".join(sorted(TRAINER_REGISTRY))
+        raise ValueError(f"Unknown trainer '{name}'. Available: {available}")
+    return factory()

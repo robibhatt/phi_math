@@ -1,0 +1,39 @@
+# GSM8K LoRA Fine-tuning Configuration
+# Usage: python -m scripts.run_train --config configs/train/gsm8k_lora.yaml
+
+task_name: "gsm8k"
+results_root: "results/train"
+seed: 42
+base_model: "microsoft/phi-1_5"
+
+lora:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+hyperparams:
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0002
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  lr_scheduler_type: "cosine"
+  logging_steps: 10
+  save_steps: 500
+  max_seq_length: 512
+
+wandb:
+  project: "phi-math-finetune"
+  entity: ""
+  run_name: "gsm8k-lora-run"
+  tags: ["lora", "gsm8k"]
+  enabled: true
+
+train_dataset:
+  name: "gsm8k"
+  split: "train"
