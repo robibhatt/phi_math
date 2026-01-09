@@ -112,11 +112,8 @@ class SFTDataset:
 
         input_ids = encoded["input_ids"]
 
-        # For causal LM, labels are the same as input_ids
-        # (the model learns to predict next token)
-        labels = input_ids.copy() if isinstance(input_ids, list) else input_ids.clone()
-
+        # Return only input_ids - DataCollatorForLanguageModeling will create
+        # labels automatically by copying input_ids
         return {
             "input_ids": input_ids,
-            "labels": labels,
         }

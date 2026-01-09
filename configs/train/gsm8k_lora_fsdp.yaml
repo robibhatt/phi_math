@@ -37,7 +37,7 @@ hyperparams:
 
 wandb:
   project: "phi-math-finetune"
-  entity: ""
+  entity: "robibhatt-university-of-tuebingen"
   run_name: "gsm8k-lora-fsdp"
   tags: ["lora", "gsm8k", "fsdp"]
   enabled: true
