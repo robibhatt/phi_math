@@ -109,6 +109,7 @@ class TrainingHyperparamsConfig:
     save_steps: int
     max_seq_length: int
     mixed_precision: str = "fp16"  # Options: "no", "fp16", "bf16" (default fp16 for V100 compat)
+    max_steps: int | None = None  # If set, overrides num_train_epochs
 
 
 @dataclass(frozen=True)
@@ -493,6 +494,14 @@ def load_training_config(path: Path | str) -> TrainingConfig:
             f"Got: {mixed_precision!r}"
         )
 
+    # Parse optional max_steps (default: None, meaning use num_train_epochs)
+    max_steps = hyperparams_map.get("max_steps")
+    if max_steps is not None:
+        if not isinstance(max_steps, int):
+            raise ValueError(f"hyperparams.max_steps must be an integer. Got: {max_steps!r}")
+        if max_steps <= 0:
+            raise ValueError(f"hyperparams.max_steps must be > 0. Got: {max_steps}")
+
     hyperparams_cfg = TrainingHyperparamsConfig(
         num_train_epochs=num_train_epochs,
         per_device_train_batch_size=per_device_train_batch_size,
@@ -506,6 +515,7 @@ def load_training_config(path: Path | str) -> TrainingConfig:
         save_steps=save_steps,
         max_seq_length=max_seq_length,
         mixed_precision=mixed_precision,
+        max_steps=max_steps,
     )
 
     # Parse wandb config

@@ -190,3 +190,33 @@ class TestTrainingRunner:
 
         # Verify run directory is under results_root
         assert str(run_dir).startswith(str(tmp_dir))
+
+    @pytest.mark.integration
+    def test_run_saves_checkpoints_in_run_dir(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Checkpoints should be saved in run directory, not shared.
+
+        This tests that each training run has isolated checkpoints in its
+        own run_dir/checkpoints/ rather than a shared results_root/checkpoints/.
+        """
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+        runner = TrainingRunner()
+
+        run_dir = runner.run(config)
+
+        # Shared checkpoints directory should NOT exist
+        shared_checkpoints = Path(config.results_root) / "checkpoints"
+        assert not shared_checkpoints.exists(), (
+            f"Checkpoints should be in run_dir, not shared at {shared_checkpoints}"
+        )
+
+        # Checkpoints should be in run-specific directory
+        run_checkpoints = run_dir / "checkpoints"
+        assert run_checkpoints.exists(), (
+            f"Checkpoints should be saved in {run_checkpoints}"
+        )

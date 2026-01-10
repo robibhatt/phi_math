@@ -465,3 +465,73 @@ class TestMixedPrecisionConfig:
 
         with pytest.raises(ValueError, match="mixed_precision must be a string"):
             load_training_config(config_path)
+
+
+class TestMaxStepsConfig:
+    """Tests for max_steps field in hyperparams."""
+
+    @pytest.mark.unit
+    def test_max_steps_defaults_to_none(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """max_steps defaults to None when not specified."""
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.hyperparams.max_steps is None
+
+    @pytest.mark.unit
+    def test_max_steps_parsed_when_set(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """max_steps is correctly parsed when specified."""
+        valid_training_config_dict["hyperparams"]["max_steps"] = 10
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        config = load_training_config(config_path)
+
+        assert config.hyperparams.max_steps == 10
+
+    @pytest.mark.unit
+    def test_max_steps_zero_raises(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """max_steps of 0 raises ValueError."""
+        valid_training_config_dict["hyperparams"]["max_steps"] = 0
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="max_steps.*must be > 0"):
+            load_training_config(config_path)
+
+    @pytest.mark.unit
+    def test_max_steps_negative_raises(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Negative max_steps raises ValueError."""
+        valid_training_config_dict["hyperparams"]["max_steps"] = -5
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="max_steps.*must be > 0"):
+            load_training_config(config_path)
+
+    @pytest.mark.unit
+    def test_max_steps_must_be_integer(
+        self, tmp_dir: Path, valid_training_config_dict: dict
+    ):
+        """Non-integer max_steps raises ValueError."""
+        valid_training_config_dict["hyperparams"]["max_steps"] = "10"
+        config_path = tmp_dir / "train_config.yaml"
+        with config_path.open("w") as f:
+            yaml.safe_dump(valid_training_config_dict, f)
+
+        with pytest.raises(ValueError, match="max_steps must be an integer"):
+            load_training_config(config_path)

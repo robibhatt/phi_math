@@ -13,10 +13,10 @@ base_model: "microsoft/phi-1_5"
 trainer: "hf"
 
 lora:
-  r: 8
-  lora_alpha: 16
+  r: 16
+  lora_alpha: 32
   lora_dropout: 0.05
-  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  target_modules: ["q_proj", "k_proj", "v_proj", "dense", "fc1", "fc2"]
   bias: "none"
   task_type: "CAUSAL_LM"
 
@@ -26,14 +26,14 @@ hyperparams:
   gradient_accumulation_steps: 4
   learning_rate: 0.0002
   warmup_ratio: 0.03
-  weight_decay: 0.0
+  weight_decay: 0.01
   max_grad_norm: 1.0
   lr_scheduler_type: "cosine"
   logging_steps: 10
-  save_steps: 500
+  save_steps: 100  # ~1 checkpoint per epoch (GSM8K has ~117 steps/epoch with batch 64)
   max_seq_length: 512
-  # Mixed precision: "fp16" for V100s, "bf16" for A100+, "no" for fp32
-  mixed_precision: "fp16"
+  # FSDP + LoRA has compatibility issues with fp16/bf16, use fp32
+  mixed_precision: "no"
 
 wandb:
   project: "phi-math-finetune"

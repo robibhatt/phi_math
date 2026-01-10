@@ -1,0 +1,149 @@
+SLURM_SUBMIT_DIR=/mnt/lustre/work/luxburg/luj210/projects/phi_math
+REPO_ROOT=/mnt/lustre/work/luxburg/luj210/projects/phi_math
+RUN_NAME=finetune_20260110_032111
+/mnt/lustre/work/luxburg/luj210/projects/phi_math
+Sat Jan 10 03:21:11 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.105.08             Driver Version: 580.105.08     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Tesla V100-SXM2-32GB           Off |   00000000:1B:00.0 Off |                    0 |
+| N/A   32C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  Tesla V100-SXM2-32GB           Off |   00000000:3D:00.0 Off |                    0 |
+| N/A   31C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  Tesla V100-SXM2-32GB           Off |   00000000:3E:00.0 Off |                    0 |
+| N/A   29C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  Tesla V100-SXM2-32GB           Off |   00000000:88:00.0 Off |                    0 |
+| N/A   30C    P0             40W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Launching training with NUM_GPUS=4 on port 28047
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+INFO 01-10 03:21:30 [__init__.py:216] Automatically detected platform cuda.
+INFO 01-10 03:21:30 [__init__.py:216] Automatically detected platform cuda.
+INFO 01-10 03:21:30 [__init__.py:216] Automatically detected platform cuda.
+INFO 01-10 03:21:30 [__init__.py:216] Automatically detected platform cuda.
+Traceback (most recent call last):
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 51, in <module>
+    main()
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 39, in main
+    config: TrainingConfig = load_training_config(config_path)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/src/phi_synth_math/core/config.py", line 448, in load_training_config
+    raise ValueError(f"Missing required field 'learning_rate' in hyperparams config.")
+ValueError: Missing required field 'learning_rate' in hyperparams config.
+Traceback (most recent call last):
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 51, in <module>
+    main()
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 39, in main
+    config: TrainingConfig = load_training_config(config_path)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/src/phi_synth_math/core/config.py", line 448, in load_training_config
+    raise ValueError(f"Missing required field 'learning_rate' in hyperparams config.")
+ValueError: Missing required field 'learning_rate' in hyperparams config.
+Traceback (most recent call last):
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 51, in <module>
+    main()
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 39, in main
+    config: TrainingConfig = load_training_config(config_path)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/src/phi_synth_math/core/config.py", line 448, in load_training_config
+    raise ValueError(f"Missing required field 'learning_rate' in hyperparams config.")
+ValueError: Missing required field 'learning_rate' in hyperparams config.
+Traceback (most recent call last):
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 51, in <module>
+    main()
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/scripts/run_train.py", line 39, in main
+    config: TrainingConfig = load_training_config(config_path)
+  File "/mnt/lustre/work/luxburg/luj210/projects/phi_math/src/phi_synth_math/core/config.py", line 448, in load_training_config
+    raise ValueError(f"Missing required field 'learning_rate' in hyperparams config.")
+ValueError: Missing required field 'learning_rate' in hyperparams config.
+E0110 03:21:37.117000 513798 site-packages/torch/distributed/elastic/multiprocessing/api.py:874] failed (exitcode: 1) local_rank: 0 (pid: 513839) of binary: /mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/bin/python3.10
+Traceback (most recent call last):
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/bin/accelerate", line 7, in <module>
+    sys.exit(main())
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
+    args.func(args)
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1226, in launch_command
+    multi_gpu_launcher(args)
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/site-packages/accelerate/commands/launch.py", line 853, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 143, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/mnt/lustre/work/luxburg/luj210/miniconda3/envs/phi_math/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 277, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+scripts.run_train FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-01-10_03:21:37
+  host      : galvani-cn053
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 513840)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2026-01-10_03:21:37
+  host      : galvani-cn053
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 513841)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2026-01-10_03:21:37
+  host      : galvani-cn053
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 513842)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-01-10_03:21:37
+  host      : galvani-cn053
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 513839)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+srun: error: galvani-cn053: task 0: Exited with exit code 1
+srun: Terminating StepId=2288074.0

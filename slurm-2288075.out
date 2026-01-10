@@ -1,0 +1,109 @@
+SLURM_SUBMIT_DIR=/mnt/lustre/work/luxburg/luj210/projects/phi_math
+REPO_ROOT=/mnt/lustre/work/luxburg/luj210/projects/phi_math
+RUN_NAME=finetune_20260110_032219
+/mnt/lustre/work/luxburg/luj210/projects/phi_math
+Sat Jan 10 03:22:19 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.105.08             Driver Version: 580.105.08     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Tesla V100-SXM2-32GB           Off |   00000000:1B:00.0 Off |                    0 |
+| N/A   32C    P0             40W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  Tesla V100-SXM2-32GB           Off |   00000000:3D:00.0 Off |                    0 |
+| N/A   31C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  Tesla V100-SXM2-32GB           Off |   00000000:3E:00.0 Off |                    0 |
+| N/A   29C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  Tesla V100-SXM2-32GB           Off |   00000000:88:00.0 Off |                    0 |
+| N/A   30C    P0             40W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Launching training with NUM_GPUS=4 on port 30725
+The following values were not passed to `accelerate launch` and had defaults used instead:
+		More than one GPU was found, enabling multi-GPU training.
+		If this was unintended please pass in `--num_processes=1`.
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+INFO 01-10 03:22:37 [__init__.py:216] Automatically detected platform cuda.
+INFO 01-10 03:22:37 [__init__.py:216] Automatically detected platform cuda.
+INFO 01-10 03:22:37 [__init__.py:216] Automatically detected platform cuda.
+INFO 01-10 03:22:37 [__init__.py:216] Automatically detected platform cuda.
+`torch_dtype` is deprecated! Use `dtype` instead!
+`torch_dtype` is deprecated! Use `dtype` instead!
+`torch_dtype` is deprecated! Use `dtype` instead!
+`torch_dtype` is deprecated! Use `dtype` instead!
+trainable params: 14,155,776 || all params: 1,432,426,496 || trainable%: 0.9882
+trainable params: 14,155,776 || all params: 1,432,426,496 || trainable%: 0.9882
+trainable params: 14,155,776 || all params: 1,432,426,496 || trainable%: 0.9882
+trainable params: 14,155,776 || all params: 1,432,426,496 || trainable%: 0.9882
+Generating train split:   0%|          | 0/7473 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 7473/7473 [00:00<00:00, 117241.02 examples/s]
+Generating test split:   0%|          | 0/1319 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 1319/1319 [00:00<00:00, 257615.23 examples/s]
+wandb: Currently logged in as: robibhatt (robibhatt-university-of-tuebingen) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: robibhatt (robibhatt-university-of-tuebingen) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: robibhatt (robibhatt-university-of-tuebingen) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: robibhatt (robibhatt-university-of-tuebingen) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run ywx1hxzz
+wandb: setting up run 1nc5eura
+wandb: setting up run aspl34d3
+wandb: setting up run 1pgams38
+wandb: Tracking run with wandb version 0.23.0
+wandb: Run data is saved locally in /mnt/lustre/work/luxburg/luj210/projects/phi_math/wandb/run-20260110_032255-1nc5eura
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run gsm8k-lora-fsdp
+wandb: ⭐️ View project at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune
+wandb: 🚀 View run at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune/runs/1nc5eura
+wandb: Tracking run with wandb version 0.23.0
+wandb: Run data is saved locally in /mnt/lustre/work/luxburg/luj210/projects/phi_math/wandb/run-20260110_032255-ywx1hxzz
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run gsm8k-lora-fsdp
+wandb: ⭐️ View project at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune
+wandb: 🚀 View run at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune/runs/ywx1hxzz
+wandb: Tracking run with wandb version 0.23.0
+wandb: Run data is saved locally in /mnt/lustre/work/luxburg/luj210/projects/phi_math/wandb/run-20260110_032255-aspl34d3
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run gsm8k-lora-fsdp
+wandb: ⭐️ View project at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune
+wandb: 🚀 View run at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune/runs/aspl34d3
+wandb: Tracking run with wandb version 0.23.0
+wandb: Run data is saved locally in /mnt/lustre/work/luxburg/luj210/projects/phi_math/wandb/run-20260110_032255-1pgams38
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run gsm8k-lora-fsdp
+wandb: ⭐️ View project at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune
+wandb: 🚀 View run at https://wandb.ai/robibhatt-university-of-tuebingen/phi-math-finetune/runs/1pgams38
+wandb: Detected [openai] in use.
+wandb: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+wandb: For more information, check out the docs at: https://weave-docs.wandb.ai/
+wandb: Detected [openai] in use.
+wandb: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+wandb: For more information, check out the docs at: https://weave-docs.wandb.ai/
+wandb: Detected [openai] in use.
+wandb: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+wandb: For more information, check out the docs at: https://weave-docs.wandb.ai/
+wandb: Detected [openai] in use.
+wandb: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+wandb: For more information, check out the docs at: https://weave-docs.wandb.ai/
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'loss': 1.3845, 'grad_norm': 0.32991576194763184, 'learning_rate': 0.0002, 'epoch': 0.11}
+  0%|          | 0/282 [00:00<?, ?it/s]  0%|          | 1/282 [00:06<32:01,  6.84s/it]  1%|          | 2/282 [00:12<28:00,  6.00s/it]  1%|          | 3/282 [00:17<27:13,  5.86s/it]  1%|▏         | 4/282 [00:23<26:48,  5.79s/it]  2%|▏         | 5/282 [00:29<26:45,  5.80s/it]  2%|▏         | 6/282 [00:35<26:37,  5.79s/it]  2%|▏         | 7/282 [00:41<26:51,  5.86s/it]  3%|▎         | 8/282 [00:46<26:19,  5.76s/it]  3%|▎         | 9/282 [00:52<25:48,  5.67s/it]  4%|▎         | 10/282 [00:58<25:59,  5.73s/it]                                                  4%|▎         | 10/282 [00:58<25:59,  5.73s/it]  4%|▍         | 11/282 [01:03<25:45,  5.70s/it]  4%|▍         | 12/282 [01:09<25:42,  5.71s/it]  5%|▍         | 13/282 [01:15<25:49,  5.76s/it]  5%|▍         | 14/282 [01:20<25:31,  5.71s/it]  5%|▌         | 15/282 [01:26<25:02,  5.63s/it]  6%|▌         | 16/282 [01:32<25:01,  5.65s/it]  6%|▌         | 17/282 [01:37<24:59,  5.66s/it]  6%|▋         | 18/282 [01:{'loss': 1.0775, 'grad_norm': 0.2133905291557312, 'learning_rate': 0.00019933859856056265, 'epoch': 0.21}
+{'loss': 1.0274, 'grad_norm': 0.22833813726902008, 'learning_rate': 0.00019736314327953243, 'epoch': 0.32}
+43<25:02,  5.69s/it]  7%|▋         | 19/282 [01:49<25:02,  5.71s/it]  7%|▋         | 20/282 [01:55<25:11,  5.77s/it]                                                  7%|▋         | 20/282 [01:55<25:11,  5.77s/it]  7%|▋         | 21/282 [02:00<25:03,  5.76s/it]  8%|▊         | 22/282 [02:06<24:32,  5.66s/it]  8%|▊         | 23/282 [02:12<25:05,  5.81s/it]  9%|▊         | 24/282 [02:18<25:30,  5.93s/it]  9%|▉         | 25/282 [02:24<25:22,  5.92s/it]  9%|▉         | 26/282 [02:30<25:30,  5.98s/it] 10%|▉         | 27/282 [02:36<25:42,  6.05s/it] 10%|▉         | 28/282 [02:42<25:04,  5.92s/it] 10%|█         | 29/282 [02:48<24:21,  5.78s/it] 11%|█         | 30/282 [02:53<23:46,  5.66s/it]                                                 11%|█         | 30/282 [02:53<23:46,  5.66s/it] 11%|█         | 31/282 [02:58<23:30,  5.62s/it] 11%|█▏        | 32/282 [03:04<23:42,  5.69s/it] 12%|█▏        | 33/282 [03:10<23:41,  5.71s/it] 12%|█▏        | 34/282 [03:{'loss': 1.0146, 'grad_norm': 0.22774972021579742, 'learning_rate': 0.00019409976553623766, 'epoch': 0.43}
+{'loss': 1.0118, 'grad_norm': 0.261034220457077, 'learning_rate': 0.00018959163338541518, 'epoch': 0.53}
+16<23:46,  5.75s/it] 12%|█▏        | 35/282 [03:21<23:08,  5.62s/it] 13%|█▎        | 36/282 [03:28<24:28,  5.97s/it] 13%|█▎        | 37/282 [03:34<24:00,  5.88s/it] 13%|█▎        | 38/282 [03:39<23:39,  5.82s/it] 14%|█▍        | 39/282 [03:45<23:28,  5.80s/it] 14%|█▍        | 40/282 [03:51<23:20,  5.79s/it]                                                 14%|█▍        | 40/282 [03:51<23:20,  5.79s/it] 15%|█▍        | 41/282 [03:57<23:30,  5.85s/it] 15%|█▍        | 42/282 [04:02<22:48,  5.70s/it] 15%|█▌        | 43/282 [04:08<22:22,  5.62s/it] 16%|█▌        | 44/282 [04:13<22:12,  5.60s/it] 16%|█▌        | 45/282 [04:19<22:09,  5.61s/it] 16%|█▋        | 46/282 [04:25<22:08,  5.63s/it] 17%|█▋        | 47/282 [04:30<22:11,  5.67s/it] 17%|█▋        | 48/282 [04:36<22:13,  5.70s/it] 17%|█▋        | 49/282 [04:43<23:42,  6.11s/it] 18%|█▊        | 50/282 [04:48<22:44,  5.88s/it]                                                 1{'loss': 1.0072, 'grad_norm': 0.2469954937696457, 'learning_rate': 0.0001838983805289396, 'epoch': 0.64}
+8%|█▊        | 50/282 [04:48<22:44,  5.88s/it] 18%|█▊        | 51/282 [04:54<22:06,  5.74s/it] 18%|█▊        | 52/282 [04:59<21:43,  5.67s/it] 19%|█▉        | 53/282 [05:05<21:44,  5.70s/it] 19%|█▉        | 54/282 [05:11<22:11,  5.84s/it] 20%|█▉        | 55/282 [05:17<22:04,  5.84s/it] 20%|█▉        | 56/282 [05:22<21:23,  5.68s/it] 20%|██        | 57/282 [05:28<21:16,  5.67s/it] 21%|██        | 58/282 [05:34<21:08,  5.66s/it] 21%|██        | 59/282 [05:39<21:09,  5.69s/it] 21%|██▏       | 60/282 [05:45<21:22,  5.78s/it]                                                 21%|██▏       | 60/282 [05:45<21:22,  5.78s/it] 22%|██▏       | 61/282 [05:52<21:42,  5.89s/it] 22%|██▏       | 62/282 [05:58<22:01,  6.01s/it] 22%|██▏       | 63/282 [06:04<21:45,  5.96s/it] 23%|██▎       | 64/282 [06:09<21:04,  5.80s/it] 23%|██▎       | 65/282 [06:15<20:56,  5.79s/it] 23%|██▎       | 66/282 [06:21<20:48,  5.78s/it] 24%|�{'loss': 1.0294, 'grad_norm': 0.24315527081489563, 'learning_rate': 0.00017709531747949796, 'epoch': 0.75}

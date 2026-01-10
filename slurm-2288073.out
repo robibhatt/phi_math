@@ -1,0 +1,40 @@
+SLURM_SUBMIT_DIR=/mnt/lustre/work/luxburg/luj210/projects/phi_math
+REPO_ROOT=/mnt/lustre/work/luxburg/luj210/projects/phi_math
+RUN_NAME=finetune_20260110_032026
+/mnt/lustre/work/luxburg/luj210/projects/phi_math
+Sat Jan 10 03:20:26 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.105.08             Driver Version: 580.105.08     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Tesla V100-SXM2-32GB           Off |   00000000:1B:00.0 Off |                    0 |
+| N/A   32C    P0             40W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  Tesla V100-SXM2-32GB           Off |   00000000:3D:00.0 Off |                    0 |
+| N/A   31C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  Tesla V100-SXM2-32GB           Off |   00000000:3E:00.0 Off |                    0 |
+| N/A   29C    P0             39W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  Tesla V100-SXM2-32GB           Off |   00000000:88:00.0 Off |                    0 |
+| N/A   30C    P0             40W /  300W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Launching training with NUM_GPUS=4 on port 32676
+[2026-01-10T03:20:26.578] error: execve(): accelerate: No such file or directory
+srun: error: galvani-cn053: task 0: Exited with exit code 2
+srun: Terminating StepId=2288073.0

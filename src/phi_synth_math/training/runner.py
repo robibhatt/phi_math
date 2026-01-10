@@ -3,14 +3,76 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import torch.distributed as dist
 import yaml
 
 from phi_synth_math.core.config import TrainingConfig
 from phi_synth_math.core.registry import make_trainer
+
+
+def _get_rank() -> int:
+    """Get the rank of the current process in distributed training.
+
+    Checks environment variables set by torchrun/accelerate before falling
+    back to torch.distributed (which may not be initialized yet).
+
+    Returns:
+        Rank of current process (0 if not in distributed mode).
+    """
+    # Check torchrun/accelerate environment variables first
+    # These are set before dist.init_process_group() is called
+    rank = os.environ.get("RANK")
+    if rank is not None:
+        return int(rank)
+
+    local_rank = os.environ.get("LOCAL_RANK")
+    if local_rank is not None:
+        return int(local_rank)
+
+    # Fall back to torch.distributed if initialized
+    if dist.is_initialized():
+        return dist.get_rank()
+
+    return 0
+
+
+def _get_world_size() -> int:
+    """Get the world size (number of processes) in distributed training.
+
+    Returns:
+        World size (1 if not in distributed mode).
+    """
+    world_size = os.environ.get("WORLD_SIZE")
+    if world_size is not None:
+        return int(world_size)
+
+    if dist.is_initialized():
+        return dist.get_world_size()
+
+    return 1
+
+
+def _is_main_process() -> bool:
+    """Check if this is the main process (rank 0) in distributed training.
+
+    Returns:
+        True if this is rank 0 or not in distributed mode.
+    """
+    return _get_rank() == 0
+
+
+def _is_distributed() -> bool:
+    """Check if we're running in distributed mode.
+
+    Returns:
+        True if running with multiple processes.
+    """
+    return _get_world_size() > 1
 
 
 def _make_training_run_dir(results_root: Path, task_name: str) -> Path:
@@ -147,24 +209,47 @@ class TrainingRunner:
 
         Returns:
             Path to the run directory containing all outputs.
-        """
-        # Create run directory
-        run_dir = _make_training_run_dir(
-            Path(config.results_root), config.task_name
-        )
 
-        # Save config snapshot
-        _save_config_snapshot(run_dir, config)
+        Note:
+            In distributed training, only rank 0 creates directories and saves
+            config/metrics. Other ranks read the run_dir from a marker file.
+        """
+        results_root = Path(config.results_root)
+        results_root.mkdir(parents=True, exist_ok=True)
+
+        # In distributed mode, use a marker file to coordinate run_dir
+        marker_file = results_root / ".current_run_dir"
+
+        if _is_main_process():
+            # Rank 0 creates the directory and writes marker
+            run_dir = _make_training_run_dir(results_root, config.task_name)
+            marker_file.write_text(str(run_dir))
+            # Save config snapshot (only on rank 0)
+            _save_config_snapshot(run_dir, config)
+        else:
+            # Other ranks wait for marker file and read run_dir from it
+            import time
+            for _ in range(60):  # Wait up to 60 seconds
+                if marker_file.exists():
+                    run_dir = Path(marker_file.read_text().strip())
+                    if run_dir.exists():
+                        break
+                time.sleep(0.5)
+            else:
+                raise RuntimeError(
+                    f"Rank {_get_rank()} timed out waiting for run_dir marker"
+                )
 
         # Create and run trainer
         trainer = make_trainer(config.trainer, config)
-        metrics = trainer.train()
+        metrics = trainer.train(run_dir=run_dir)
 
-        # Save adapter
-        adapter_dir = run_dir / "adapter"
-        trainer.save_adapter(adapter_dir)
-
-        # Save metrics
-        _save_metrics(run_dir, metrics)
+        # Save adapter and metrics (only on rank 0)
+        if _is_main_process():
+            adapter_dir = run_dir / "adapter"
+            trainer.save_adapter(adapter_dir)
+            _save_metrics(run_dir, metrics)
+            # Clean up marker file
+            marker_file.unlink(missing_ok=True)
 
         return run_dir

@@ -96,13 +96,24 @@ class HFTrainer:
 
         return " ".join(fsdp_options), fsdp_config
 
-    def train(self) -> dict[str, Any]:
+    def train(self, run_dir: Path | None = None) -> dict[str, Any]:
         """Run LoRA fine-tuning.
+
+        Args:
+            run_dir: Run directory for checkpoints. If provided, checkpoints
+                are saved to run_dir/checkpoints/ for isolation. If None,
+                falls back to results_root/checkpoints/ (legacy behavior).
 
         Returns:
             Dictionary of training metrics including train_loss, epochs, etc.
         """
         config = self._config
+
+        # Determine checkpoint directory - prefer run_dir for isolation
+        if run_dir is not None:
+            checkpoint_dir = Path(run_dir) / "checkpoints"
+        else:
+            checkpoint_dir = Path(config.results_root) / "checkpoints"
 
         # Load tokenizer
         self._tokenizer = AutoTokenizer.from_pretrained(config.base_model)
@@ -168,9 +179,12 @@ class HFTrainer:
         fsdp_options, fsdp_config = self._build_fsdp_args()
 
         # Training arguments
+        # max_steps=-1 means use num_train_epochs instead
+        max_steps = config.hyperparams.max_steps if config.hyperparams.max_steps else -1
         training_args = TrainingArguments(
-            output_dir=str(Path(config.results_root) / "checkpoints"),
+            output_dir=str(checkpoint_dir),
             num_train_epochs=config.hyperparams.num_train_epochs,
+            max_steps=max_steps,
             per_device_train_batch_size=config.hyperparams.per_device_train_batch_size,
             gradient_accumulation_steps=config.hyperparams.gradient_accumulation_steps,
             learning_rate=config.hyperparams.learning_rate,

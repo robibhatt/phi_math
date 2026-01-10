@@ -119,3 +119,15 @@ class TestHFTrainer:
         # Check that required methods exist and are callable
         assert callable(getattr(trainer, "train", None))
         assert callable(getattr(trainer, "save_adapter", None))
+
+    @pytest.mark.unit
+    def test_train_accepts_run_dir_parameter(
+        self, valid_training_config: TrainingConfig
+    ):
+        """train() method should accept run_dir for checkpoint isolation."""
+        import inspect
+
+        sig = inspect.signature(HFTrainer.train)
+        assert "run_dir" in sig.parameters, (
+            "train() should accept run_dir parameter for checkpoint isolation"
+        )

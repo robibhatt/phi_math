@@ -26,13 +26,24 @@ class DummyTrainer:
         self._config = config
         self._trained = False
 
-    def train(self) -> dict[str, Any]:
+    def train(self, run_dir: Path | None = None) -> dict[str, Any]:
         """Run dummy training.
+
+        Args:
+            run_dir: Optional run directory for checkpoint output.
+                If provided, creates a checkpoint directory to simulate
+                real trainer behavior.
 
         Returns:
             Dictionary with fixed training metrics.
         """
         self._trained = True
+
+        # Create checkpoint directory if run_dir provided (simulates real trainer)
+        if run_dir is not None:
+            checkpoint_dir = Path(run_dir) / "checkpoints"
+            checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
         return {
             "train_loss": 0.5,
             "train_runtime": 1.0,
